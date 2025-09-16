@@ -205,14 +205,6 @@ update_settings() {
     local temp_file="${SETTINGS_FILE}.tmp"
     cp "$SETTINGS_FILE" "$temp_file"
     
-    if grep -q "^asset_httpAddress" "$temp_file"; then
-        portable_sed_inplace "s|^asset_httpAddress.*|asset_httpAddress = ${NGROK_URL}/api/v1|" "$temp_file"
-        echo_info "Updated asset_httpAddress"
-    else
-        echo "asset_httpAddress = ${NGROK_URL}/api/v1" >> "$temp_file"
-        echo_info "Added asset_httpAddress"
-    fi
-    
     if grep -q "^asset_httpPublicAddress" "$temp_file"; then
         portable_sed_inplace "s|^asset_httpPublicAddress.*|asset_httpPublicAddress = ${NGROK_URL}/api/v1|" "$temp_file"
         echo_info "Updated asset_httpPublicAddress"
