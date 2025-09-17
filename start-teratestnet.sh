@@ -107,40 +107,60 @@ prompt_for_inputs() {
     echo
     echo_info "=== Teratestnet Configuration ==="
     echo
-    
+
     if [ "$USE_NGROK" = true ]; then
         read -p "Enter your ngrok domain (e.g., example.ngrok-free.app): " URL_INPUT
     else
         read -p "Enter your domain/URL (e.g., teranode.example.com or https://teranode.example.com): " URL_INPUT
     fi
-    
+
     if [ -z "$URL_INPUT" ]; then
         echo_error "Domain/URL cannot be empty"
         exit 1
     fi
-    
+
     process_ngrok_url "$URL_INPUT"
-    
-    read -p "Enter RPC username: " RPC_USER
-    if [ -z "$RPC_USER" ]; then
-        echo_error "RPC username cannot be empty"
-        exit 1
-    fi
-    
-    read -s -p "Enter RPC password: " RPC_PASS
+
     echo
-    if [ -z "$RPC_PASS" ]; then
-        echo_error "RPC password cannot be empty"
-        exit 1
-    fi
-    
-    read -s -p "Confirm RPC password: " RPC_PASS_CONFIRM
+    echo_info "RPC Credentials Configuration"
+    echo_info "You can either:"
+    echo "  1. Set RPC credentials now (automatic)"
+    echo "  2. Configure them manually in settings.conf later"
     echo
-    if [ "$RPC_PASS" != "$RPC_PASS_CONFIRM" ]; then
-        echo_error "Passwords do not match"
-        exit 1
+    echo_info "Note: RPC credentials are required for remote access to your node"
+    echo
+
+    read -p "Would you like to set RPC credentials now? (y/n): " SET_RPC_CREDS
+
+    if [[ "$SET_RPC_CREDS" =~ ^[Yy]$ ]]; then
+        read -p "Enter RPC username: " RPC_USER
+        if [ -z "$RPC_USER" ]; then
+            echo_error "RPC username cannot be empty"
+            exit 1
+        fi
+
+        read -s -p "Enter RPC password: " RPC_PASS
+        echo
+        if [ -z "$RPC_PASS" ]; then
+            echo_error "RPC password cannot be empty"
+            exit 1
+        fi
+
+        read -s -p "Confirm RPC password: " RPC_PASS_CONFIRM
+        echo
+        if [ "$RPC_PASS" != "$RPC_PASS_CONFIRM" ]; then
+            echo_error "Passwords do not match"
+            exit 1
+        fi
+    else
+        echo_info "Skipping RPC credentials setup"
+        echo_info "You can add them manually to ${SETTINGS_FILE}:"
+        echo "  rpc_user = your_username"
+        echo "  rpc_pass = your_password"
+        RPC_USER=""
+        RPC_PASS=""
     fi
-    
+
     read -p "Enter Human Readable Client Name (for web interface viewing only) (optional, press Enter to skip): " CLIENT_NAME
     if [ -n "$CLIENT_NAME" ]; then
         if [ ${#CLIENT_NAME} -gt 100 ]; then
@@ -154,7 +174,7 @@ prompt_for_inputs() {
             echo_warning "Miner ID is quite long (${#MINER_ID} characters). Consider using a shorter identifier."
         fi
     fi
-    
+
     echo
     echo_info "Configuration summary:"
     if [ "$USE_NGROK" = true ]; then
@@ -163,8 +183,12 @@ prompt_for_inputs() {
         echo "  - Domain: $NGROK_DOMAIN"
     fi
     echo "  - Full URL: $NGROK_URL"
-    echo "  - RPC Username: $RPC_USER"
-    echo "  - RPC Password: [hidden]"
+    if [ -n "$RPC_USER" ]; then
+        echo "  - RPC Username: $RPC_USER"
+        echo "  - RPC Password: [hidden]"
+    else
+        echo "  - RPC Credentials: To be configured manually"
+    fi
     if [ -n "$MINER_ID" ]; then
         echo "  - Miner Coinbase: $MINER_ID"
     fi
@@ -172,7 +196,7 @@ prompt_for_inputs() {
         echo "  - Client Name: $CLIENT_NAME"
     fi
     echo
-    
+
     read -p "Is this correct? (y/n): " CONFIRM
     if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
         echo_info "Configuration cancelled."
@@ -201,10 +225,10 @@ portable_sed_inplace() {
 
 update_settings() {
     echo_info "Updating settings.conf..."
-    
+
     local temp_file="${SETTINGS_FILE}.tmp"
     cp "$SETTINGS_FILE" "$temp_file"
-    
+
     if grep -q "^asset_httpPublicAddress" "$temp_file"; then
         portable_sed_inplace "s|^asset_httpPublicAddress.*|asset_httpPublicAddress = ${NGROK_URL}/api/v1|" "$temp_file"
         echo_info "Updated asset_httpPublicAddress"
@@ -212,23 +236,28 @@ update_settings() {
         echo "asset_httpPublicAddress = ${NGROK_URL}/api/v1" >> "$temp_file"
         echo_info "Added asset_httpPublicAddress"
     fi
-    
-    if grep -q "^rpc_user" "$temp_file"; then
-        portable_sed_inplace "s|^rpc_user.*|rpc_user = ${RPC_USER}|" "$temp_file"
-        echo_info "Updated rpc_user"
+
+    # Only update RPC credentials if they were provided
+    if [ -n "$RPC_USER" ]; then
+        if grep -q "^rpc_user" "$temp_file"; then
+            portable_sed_inplace "s|^rpc_user.*|rpc_user = ${RPC_USER}|" "$temp_file"
+            echo_info "Updated rpc_user"
+        else
+            echo "rpc_user = ${RPC_USER}" >> "$temp_file"
+            echo_info "Added rpc_user"
+        fi
+
+        if grep -q "^rpc_pass" "$temp_file"; then
+            portable_sed_inplace "s|^rpc_pass.*|rpc_pass = ${RPC_PASS}|" "$temp_file"
+            echo_info "Updated rpc_pass"
+        else
+            echo "rpc_pass = ${RPC_PASS}" >> "$temp_file"
+            echo_info "Added rpc_pass"
+        fi
     else
-        echo "rpc_user = ${RPC_USER}" >> "$temp_file"
-        echo_info "Added rpc_user"
+        echo_warning "RPC credentials not configured. Remember to add them manually to settings.conf"
     fi
-    
-    if grep -q "^rpc_pass" "$temp_file"; then
-        portable_sed_inplace "s|^rpc_pass.*|rpc_pass = ${RPC_PASS}|" "$temp_file"
-        echo_info "Updated rpc_pass"
-    else
-        echo "rpc_pass = ${RPC_PASS}" >> "$temp_file"
-        echo_info "Added rpc_pass"
-    fi
-    
+
     if [ -n "$MINER_ID" ]; then
         if grep -q "^coinbase_arbitrary_text" "$temp_file"; then
             portable_sed_inplace "s|^coinbase_arbitrary_text.*|coinbase_arbitrary_text = ${MINER_ID}|" "$temp_file"
@@ -249,7 +278,7 @@ update_settings() {
         fi
     fi
 
-    
+
     mv "$temp_file" "$SETTINGS_FILE"
     echo_info "Settings updated successfully."
 }
@@ -275,16 +304,16 @@ start_docker_compose() {
 
 start_ngrok() {
     if [ "$USE_NGROK" = false ]; then
-        echo_info "Skipping ngrok startup (--no-ngrok flag set)"
+        echo_info "Skipping ngrok setup (--no-ngrok flag set)"
         return
     fi
-    
+
     echo_info "Checking for existing ngrok process..."
-    
+
     # Check if ngrok is already running
     if pgrep -x "ngrok" > /dev/null; then
         echo_info "Found existing ngrok process"
-        
+
         # Check if the ngrok API is accessible and get tunnel info
         if curl -s http://localhost:4040/api/tunnels 2>/dev/null | grep -q "${NGROK_DOMAIN}"; then
             echo_info "ngrok is already running with domain: ${NGROK_DOMAIN}"
@@ -299,26 +328,55 @@ start_ngrok() {
             exit 1
         fi
     fi
-    
-    echo_info "Starting new ngrok process with domain: $NGROK_DOMAIN"
-    
-    # Start ngrok with the user-supplied URL
-    echo_info "Running: ngrok http --url=${NGROK_DOMAIN} 8090"
-    ngrok http --url="${NGROK_DOMAIN}" 8090 &
-    
-    local ngrok_pid=$!
-    
-    sleep 3
-    
-    if ps -p $ngrok_pid > /dev/null 2>&1; then
-        echo_info "ngrok started successfully (PID: $ngrok_pid)"
-        echo_info "You can check ngrok status at: http://localhost:4040"
-        echo_info "Public URL: ${NGROK_URL}"
-    else
-        echo_error "Failed to start ngrok. Please check your ngrok configuration."
-        echo_error "Make sure you have a paid ngrok account with custom domain support if using --url"
-        exit 1
-    fi
+
+    echo
+    echo_warning "========================================="
+    echo_warning "NGROK SETUP REQUIRED"
+    echo_warning "========================================="
+    echo
+    echo_info "Please open a new terminal window and run the following command:"
+    echo
+    echo -e "${GREEN}    ngrok http --url=${NGROK_DOMAIN} 8090${NC}"
+    echo
+    echo_info "This will create a tunnel from ${NGROK_URL} to your local Teranode asset service."
+    echo
+    echo_info "After starting ngrok, you can verify it's running at: http://localhost:4040"
+    echo
+    read -p "Press Enter once ngrok is running in another terminal... "
+
+    # Verify ngrok is now running
+    echo_info "Verifying ngrok connection..."
+
+    local max_attempts=5
+    local attempt=1
+    local wait_time=2
+
+    while [ $attempt -le $max_attempts ]; do
+        if pgrep -x "ngrok" > /dev/null; then
+            # Check if the ngrok API is accessible and get tunnel info
+            if curl -s http://localhost:4040/api/tunnels 2>/dev/null | grep -q "${NGROK_DOMAIN}"; then
+                echo_info "ngrok verified successfully!"
+                echo_info "Tunnel established: ${NGROK_URL} -> localhost:8090"
+                echo_info "You can monitor ngrok at: http://localhost:4040"
+                return
+            else
+                echo_warning "ngrok is running but tunnel not yet established..."
+            fi
+        else
+            echo_warning "ngrok process not detected..."
+        fi
+
+        if [ $attempt -eq $max_attempts ]; then
+            echo_error "Could not verify ngrok is running with domain: ${NGROK_DOMAIN}"
+            echo_error "Please ensure you ran the command exactly as shown above"
+            echo_error "To retry, stop this script and run it again"
+            exit 1
+        fi
+
+        echo_info "Retrying verification (attempt $attempt/$max_attempts)..."
+        sleep $wait_time
+        attempt=$((attempt + 1))
+    done
 }
 
 set_fsm_state_running() {
@@ -380,7 +438,7 @@ show_completion_message() {
     echo "  - FSM State: RUNNING (operational)"
     echo "  - Docker Compose: Running in background"
     if [ "$USE_NGROK" = true ]; then
-        echo "  - ngrok: Running (check http://localhost:4040)"
+        echo "  - ngrok: Running in separate terminal (monitor at http://localhost:4040)"
     fi
     echo
     echo "Endpoints:"
@@ -389,8 +447,12 @@ show_completion_message() {
     echo "  - P2P advertise: ${NGROK_DOMAIN}"
     echo
     echo "Credentials:"
-    echo "  - RPC Username: $RPC_USER"
-    echo "  - RPC Password: [saved in settings.conf]"
+    if [ -n "$RPC_USER" ]; then
+        echo "  - RPC Username: $RPC_USER"
+        echo "  - RPC Password: [saved in settings.conf]"
+    else
+        echo "  - RPC Credentials: Not configured (add to settings.conf manually)"
+    fi
     if [ -n "$MINER_ID" ]; then
         echo "  - Miner ID: $MINER_ID"
     fi
@@ -398,7 +460,7 @@ show_completion_message() {
     echo "To stop services:"
     echo "  - Docker: docker compose down"
     if [ "$USE_NGROK" = true ]; then
-        echo "  - ngrok: killall ngrok"
+        echo "  - ngrok: Stop the ngrok process in its terminal (Ctrl+C)"
     fi
     echo
     echo "Settings backup: $BACKUP_FILE"
