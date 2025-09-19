@@ -108,18 +108,45 @@ prompt_for_inputs() {
     echo_info "=== Teratestnet Configuration ==="
     echo
 
-    if [ "$USE_NGROK" = true ]; then
-        read -p "Enter your ngrok domain (e.g., example.ngrok-free.app): " URL_INPUT
-    else
-        read -p "Enter your domain/URL (e.g., teranode.example.com or https://teranode.example.com): " URL_INPUT
-    fi
+    # Prompt for node mode selection
+    echo_info "Node Operation Mode Selection"
+    echo
+    echo "Please select how you want to run your Teranode:"
+    echo "  1. Full mode - Fully participate in the network (requires ngrok or public domain)"
+    echo "  2. Listen-only mode - Only receive blocks, no mining or transaction relay"
+    echo
+    echo_info "Listen-only mode is ideal for monitoring the network without external access"
+    echo
 
-    if [ -z "$URL_INPUT" ]; then
-        echo_error "Domain/URL cannot be empty"
+    read -p "Select mode (1 for Full, 2 for Listen-only): " MODE_CHOICE
+
+    if [ "$MODE_CHOICE" = "2" ]; then
+        LISTEN_MODE="listen_only"
+        echo_info "Listen-only mode selected - ngrok configuration not required"
+        USE_NGROK=false
+        # Set a placeholder URL for listen-only mode
+        NGROK_URL="http://localhost"
+        NGROK_DOMAIN="localhost"
+    elif [ "$MODE_CHOICE" = "1" ]; then
+        LISTEN_MODE="full"
+        echo_info "Full mode selected - external access configuration required"
+
+        if [ "$USE_NGROK" = true ]; then
+            read -p "Enter your ngrok domain (e.g., example.ngrok-free.app): " URL_INPUT
+        else
+            read -p "Enter your domain/URL (e.g., teranode.example.com or https://teranode.example.com): " URL_INPUT
+        fi
+
+        if [ -z "$URL_INPUT" ]; then
+            echo_error "Domain/URL cannot be empty for full mode"
+            exit 1
+        fi
+
+        process_ngrok_url "$URL_INPUT"
+    else
+        echo_error "Invalid selection. Please run the script again and select 1 or 2"
         exit 1
     fi
-
-    process_ngrok_url "$URL_INPUT"
 
     echo
     echo_info "RPC Credentials Configuration"
@@ -168,29 +195,67 @@ prompt_for_inputs() {
         fi
     fi
 
-    read -p "Enter Miner Coinbase String (optional, press Enter to skip): " MINER_ID
-    if [ -n "$MINER_ID" ]; then
-        if [ ${#MINER_ID} -gt 100 ]; then
-            echo_warning "Miner ID is quite long (${#MINER_ID} characters). Consider using a shorter identifier."
+    # Mining configuration (only for full mode)
+    MINING_ENABLED="false"
+    MINING_ADDRESS=""
+    MINER_ID=""
+
+    if [ "$LISTEN_MODE" = "full" ]; then
+        echo
+        echo_info "Mining Configuration"
+        echo_info "Note: Mining requires computational resources and will use CPU"
+        echo
+        read -p "Would you like to enable CPU mining? (y/n): " ENABLE_MINING
+
+        if [[ "$ENABLE_MINING" =~ ^[Yy]$ ]]; then
+            MINING_ENABLED="true"
+
+            read -p "Enter Bitcoin address for mining rewards: " MINING_ADDRESS
+            while [ -z "$MINING_ADDRESS" ]; do
+                echo_error "Mining address cannot be empty when mining is enabled"
+                read -p "Enter Bitcoin address for mining rewards: " MINING_ADDRESS
+            done
+
+            read -p "Enter Miner ID/Signature (e.g., /YourMinerID/) (optional, press Enter to skip): " MINER_ID
+            if [ -z "$MINER_ID" ]; then
+                MINER_ID="/Teratestnet/"
+                echo_info "Using default miner ID: $MINER_ID"
+            fi
+
+            echo_info "Mining will be enabled with:"
+            echo "  - Mining address: $MINING_ADDRESS"
+            echo "  - Miner ID: $MINER_ID"
+            echo "  - CPU threads: 2"
+        else
+            echo_info "Mining disabled"
         fi
+    else
+        echo_info "Mining is not available in listen-only mode"
     fi
 
     echo
     echo_info "Configuration summary:"
-    if [ "$USE_NGROK" = true ]; then
-        echo "  - Ngrok Domain: $NGROK_DOMAIN"
-    else
-        echo "  - Domain: $NGROK_DOMAIN"
+    echo "  - Mode: $([ "$LISTEN_MODE" = "listen_only" ] && echo "Listen-only" || echo "Full")"
+    if [ "$LISTEN_MODE" = "full" ]; then
+        if [ "$USE_NGROK" = true ]; then
+            echo "  - Ngrok Domain: $NGROK_DOMAIN"
+        else
+            echo "  - Domain: $NGROK_DOMAIN"
+        fi
+        echo "  - Full URL: $NGROK_URL"
     fi
-    echo "  - Full URL: $NGROK_URL"
     if [ -n "$RPC_USER" ]; then
         echo "  - RPC Username: $RPC_USER"
         echo "  - RPC Password: [hidden]"
     else
         echo "  - RPC Credentials: To be configured manually"
     fi
-    if [ -n "$MINER_ID" ]; then
-        echo "  - Miner Coinbase: $MINER_ID"
+    if [ "$MINING_ENABLED" = "true" ]; then
+        echo "  - Mining: Enabled"
+        echo "  - Mining Address: $MINING_ADDRESS"
+        echo "  - Miner ID: $MINER_ID"
+    else
+        echo "  - Mining: Disabled"
     fi
     if [ -n "$CLIENT_NAME" ]; then
         echo "  - Client Name: $CLIENT_NAME"
@@ -229,12 +294,24 @@ update_settings() {
     local temp_file="${SETTINGS_FILE}.tmp"
     cp "$SETTINGS_FILE" "$temp_file"
 
-    if grep -q "^asset_httpPublicAddress" "$temp_file"; then
-        portable_sed_inplace "s|^asset_httpPublicAddress.*|asset_httpPublicAddress = ${NGROK_URL}/api/v1|" "$temp_file"
-        echo_info "Updated asset_httpPublicAddress"
+    # Configure listen_mode
+    if grep -q "^listen_mode" "$temp_file"; then
+        portable_sed_inplace "s|^listen_mode.*|listen_mode = ${LISTEN_MODE}|" "$temp_file"
+        echo_info "Updated listen_mode to: ${LISTEN_MODE}"
     else
-        echo "asset_httpPublicAddress = ${NGROK_URL}/api/v1" >> "$temp_file"
-        echo_info "Added asset_httpPublicAddress"
+        echo "listen_mode = ${LISTEN_MODE}" >> "$temp_file"
+        echo_info "Added listen_mode: ${LISTEN_MODE}"
+    fi
+
+    # Only update asset_httpPublicAddress for full mode
+    if [ "$LISTEN_MODE" = "full" ]; then
+        if grep -q "^asset_httpPublicAddress" "$temp_file"; then
+            portable_sed_inplace "s|^asset_httpPublicAddress.*|asset_httpPublicAddress = ${NGROK_URL}/api/v1|" "$temp_file"
+            echo_info "Updated asset_httpPublicAddress"
+        else
+            echo "asset_httpPublicAddress = ${NGROK_URL}/api/v1" >> "$temp_file"
+            echo_info "Added asset_httpPublicAddress"
+        fi
     fi
 
     # Only update RPC credentials if they were provided
@@ -285,17 +362,43 @@ update_settings() {
 
 start_docker_compose() {
     echo_info "Starting Teratestnet with Docker Compose..."
-    
+
     cd "$SCRIPT_DIR"
-    
-    if command -v docker compose &> /dev/null; then
-        docker compose up -d
+
+    # Export mining environment variables
+    export MINING_ENABLED="${MINING_ENABLED:-false}"
+    export MINING_ADDRESS="${MINING_ADDRESS:-}"
+    export MINING_SIG="${MINER_ID:-}"
+
+    # Export RPC credentials for miner (use defaults if not set)
+    export RPC_USER="${RPC_USER:-bitcoin}"
+    export RPC_PASS="${RPC_PASS:-bitcoin}"
+
+    # Determine which profile to use
+    local compose_cmd=""
+    if [ "$MINING_ENABLED" = "true" ]; then
+        echo_info "Mining is enabled, starting with mining profile..."
+        if command -v docker compose &> /dev/null; then
+            compose_cmd="docker compose --profile mining up -d"
+        else
+            compose_cmd="docker-compose --profile mining up -d"
+        fi
     else
-        docker-compose up -d
+        if command -v docker compose &> /dev/null; then
+            compose_cmd="docker compose up -d"
+        else
+            compose_cmd="docker-compose up -d"
+        fi
     fi
-    
+
+    echo_info "Running: $compose_cmd"
+    eval $compose_cmd
+
     if [ $? -eq 0 ]; then
         echo_info "Docker Compose started successfully."
+        if [ "$MINING_ENABLED" = "true" ]; then
+            echo_info "CPU miner container will start mining shortly..."
+        fi
     else
         echo_error "Failed to start Docker Compose."
         exit 1
@@ -304,7 +407,11 @@ start_docker_compose() {
 
 start_ngrok() {
     if [ "$USE_NGROK" = false ]; then
-        echo_info "Skipping ngrok setup (--no-ngrok flag set)"
+        if [ "$LISTEN_MODE" = "listen_only" ]; then
+            echo_info "Skipping ngrok setup (listen-only mode)"
+        else
+            echo_info "Skipping ngrok setup (--no-ngrok flag set)"
+        fi
         return
     fi
 
@@ -435,17 +542,27 @@ show_completion_message() {
     echo_info "========================================="
     echo
     echo "Node Status:"
+    echo "  - Mode: $([ "$LISTEN_MODE" = "listen_only" ] && echo "Listen-only" || echo "Full")"
     echo "  - FSM State: RUNNING (operational)"
     echo "  - Docker Compose: Running in background"
     if [ "$USE_NGROK" = true ]; then
         echo "  - ngrok: Running in separate terminal (monitor at http://localhost:4040)"
     fi
     echo
-    echo "Endpoints:"
-    echo "  - RPC endpoint: ${NGROK_URL}:9292"
-    echo "  - Asset API: ${NGROK_URL}/api/v1"
-    echo "  - P2P advertise: ${NGROK_DOMAIN}"
+
+    if [ "$LISTEN_MODE" = "full" ]; then
+        echo "Endpoints:"
+        echo "  - RPC endpoint: ${NGROK_URL}:9292"
+        echo "  - Asset API: ${NGROK_URL}/api/v1"
+        echo "  - P2P advertise: ${NGROK_DOMAIN}"
+    else
+        echo "Endpoints (local only - listen-only mode):"
+        echo "  - RPC endpoint: http://localhost:9292"
+        echo "  - Asset API: http://localhost:8090/api/v1"
+        echo "  - Note: External connections not available in listen-only mode"
+    fi
     echo
+
     echo "Credentials:"
     if [ -n "$RPC_USER" ]; then
         echo "  - RPC Username: $RPC_USER"
@@ -453,10 +570,24 @@ show_completion_message() {
     else
         echo "  - RPC Credentials: Not configured (add to settings.conf manually)"
     fi
-    if [ -n "$MINER_ID" ]; then
+    echo
+
+    if [ "$MINING_ENABLED" = "true" ]; then
+        echo "Mining Status:"
+        echo "  - CPU Miner: ENABLED"
+        echo "  - Mining Address: $MINING_ADDRESS"
         echo "  - Miner ID: $MINER_ID"
+        echo "  - CPU Threads: 2"
+        echo "  - Container: cpuminer"
+        echo
+        echo "Monitor mining:"
+        echo "  - Logs: docker logs -f cpuminer"
+        echo "  - Stop mining: docker compose --profile mining down"
+    else
+        echo "Mining Status: DISABLED"
     fi
     echo
+
     echo "To stop services:"
     echo "  - Docker: docker compose down"
     if [ "$USE_NGROK" = true ]; then
@@ -465,7 +596,13 @@ show_completion_message() {
     echo
     echo "Settings backup: $BACKUP_FILE"
     echo
-    echo_info "Your Teranode is now ready to process transactions!"
+
+    if [ "$LISTEN_MODE" = "listen_only" ]; then
+        echo_info "Your Teranode is running in listen-only mode!"
+        echo_info "The node will sync with the network but won't mine or relay transactions."
+    else
+        echo_info "Your Teranode is now ready to process transactions!"
+    fi
 }
 
 main() {
