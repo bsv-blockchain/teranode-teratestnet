@@ -7,6 +7,6 @@ insert_final_newline = true
 trim_trailing_whitespace = true
 
 # exclude data folder indexing for IDEs
-[{data/**}]
+[data/*]
 generated_code = true
-ij_formatter_enabled = true
+ij_formatter_enabled = false
