@@ -1,0 +1,2 @@
+# Ignore data directory for search tools (ripgrep, ag, fd, etc.)
+data/

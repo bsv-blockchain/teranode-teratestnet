@@ -1,0 +1,12 @@
+# Data directory contains Docker volume data and should not be tracked
+data/*
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
