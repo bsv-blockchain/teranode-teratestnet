@@ -306,10 +306,10 @@ update_settings() {
     # Only update asset_httpPublicAddress for full mode
     if [ "$LISTEN_MODE" = "full" ]; then
         if grep -q "^asset_httpPublicAddress" "$temp_file"; then
-            portable_sed_inplace "s|^asset_httpPublicAddress.*|asset_httpPublicAddress = ${NGROK_URL}/api/v1|" "$temp_file"
+            portable_sed_inplace "s|^asset_httpPublicAddress.*|asset_httpPublicAddress.docker.m = ${NGROK_URL}/api/v1|" "$temp_file"
             echo_info "Updated asset_httpPublicAddress"
         else
-            echo "asset_httpPublicAddress = ${NGROK_URL}/api/v1" >> "$temp_file"
+            echo "asset_httpPublicAddress.docker.m = ${NGROK_URL}/api/v1" >> "$temp_file"
             echo_info "Added asset_httpPublicAddress"
         fi
     fi
