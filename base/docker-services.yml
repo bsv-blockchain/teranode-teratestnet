@@ -64,7 +64,7 @@ services:
   #   depends_on:
   #     - kafka-shared
 
-  # Primary Aerospike node (maintains original name for compatibility)
+  # Aerospike Community Edition
   aerospike:
     container_name: aerospike
     image: aerospike/aerospike-server:8.1
@@ -77,52 +77,37 @@ services:
       - 3000
       - 3001
       - 3002
-    restart: on-failure
+    restart: unless-stopped
     volumes:
       - ./aerospike.conf:/etc/aerospike.conf
       - ${DATA_PATH}/aerospike/data:/opt/aerospike/data
+      - ${DATA_PATH}/aerospike/smd:/opt/aerospike/smd
     privileged: true  # Allow the container to access raw devices
     hostname: aerospike
 
-  # Optional second Aerospike node
-  aerospike-2:
-    container_name: aerospike-2
-    image: aerospike/aerospike-server:8.1
-    command: --config-file /etc/aerospike.conf
+  # Aerospike Enterprise Edition
+  aerospike-ee:
+    container_name: aerospike
+    image: aerospike/aerospike-server-enterprise:8.1
     networks:
       - teranode-network
     ports:
-      - 3010:3000  # Map to different host port to avoid conflicts
+      - 3000:3000
     expose:
       - 3000
       - 3001
       - 3002
-    restart: on-failure
+    restart: unless-stopped
+    stop_grace_period: 600s # to allow ASMT to backup the indexes for warm restarts
     volumes:
-      - ./aerospike.conf:/etc/aerospike.conf
-      - ${DATA_PATH}/aerospike-2/data:/opt/aerospike/data
-    privileged: true
-    hostname: aerospike-2
-
-  # Optional third Aerospike node, replication factor still set to 2
-  aerospike-3:
-    container_name: aerospike-3
-    image: aerospike/aerospike-server:8.1
-    command: --config-file /etc/aerospike.conf
-    networks:
-      - teranode-network
-    ports:
-      - 3020:3000  # Map to different host port to avoid conflicts
-    expose:
-      - 3000
-      - 3001
-      - 3002
-    restart: on-failure
-    volumes:
-      - ./aerospike.conf:/etc/aerospike.conf
-      - ${DATA_PATH}/aerospike-3/data:/opt/aerospike/data
-    privileged: true
-    hostname: aerospike-3
+      - ./aerospike-ee.conf:/etc/aerospike.conf
+      - ./aerospike-asmt-wrapper.sh:/aerospike-asmt-wrapper.sh:ro
+      - ${DATA_PATH}/aerospike/data:/opt/aerospike/data
+      - ${DATA_PATH}/aerospike/smd:/opt/aerospike/smd
+      - ${DATA_PATH}/aerospike/asmt:/backup/indexes
+    entrypoint: ["/bin/bash", "/aerospike-asmt-wrapper.sh"]
+    privileged: true  # Allow the container to access raw devices
+    hostname: aerospike
 
   # Aerospike exporter for the primary node
   aerospike-exporter:
@@ -133,18 +118,6 @@ services:
       AS_PORT: 3000
       AGENT_BIND_PORT: 10145
       METRIC_LABELS: "type='development',source='aerospike'"
-    networks:
-      - teranode-network
-
-  # Optional exporter for the second node
-  aerospike-exporter-2:
-    image: aerospike/aerospike-prometheus-exporter:latest
-    container_name: aerospike-exporter-2
-    environment:
-      AS_HOST: aerospike-2
-      AS_PORT: 3000
-      AGENT_BIND_PORT: 10146
-      METRIC_LABELS: "type='development',source='aerospike-2',node='2'"
     networks:
       - teranode-network
 

@@ -88,7 +88,10 @@ services:
   aerospike:
     extends:
       file: ./base/docker-services.yml
-      service: aerospike
+      # Community Edition
+      # service: aerospike
+      # Enterprise Edition, evaluation mode, single node
+      service: aerospike-ee
 
   aerospike-exporter:
     extends:
