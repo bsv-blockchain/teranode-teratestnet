@@ -19,7 +19,7 @@ This script automates the setup and configuration of a Teratestnet node using Do
 
 1. **Docker** - Container runtime
    - Installation: [https://docs.docker.com/get-docker/](https://docs.docker.com/get-docker/)
-   
+
 2. **Docker Compose** - Multi-container orchestration
    - Usually included with Docker Desktop
    - Standalone installation: [https://docs.docker.com/compose/install/](https://docs.docker.com/compose/install/)
@@ -120,7 +120,7 @@ The script automatically:
 
 - **Prompt:** "Enter RPC password"
 - **Purpose:** Password for JSON-RPC authentication
-- **Requirements:** 
+- **Requirements:**
   - Cannot be empty
   - Must be confirmed (entered twice)
   - Hidden during input for security
@@ -129,7 +129,7 @@ The script automatically:
 
 - **Prompt:** "Enter Miner ID (optional, press Enter to skip)"
 - **Purpose:** Sets the `coinbase_arbitrary_string` in the configuration
-- **Requirements:** 
+- **Requirements:**
   - Optional field
   - Warning shown if longer than 100 characters
 - **Example:** `MyMiningNode-001`
@@ -191,7 +191,7 @@ Enter your domain/URL (e.g., teranode.example.com): teranode.mydomain.com
 Enter RPC username: nodeoperator
 Enter RPC password: [hidden]
 Confirm RPC password: [hidden]
-Enter Miner ID (optional, press Enter to skip): 
+Enter Miner ID (optional, press Enter to skip):
 
 [INFO] Configuration summary:
   - Domain: teranode.mydomain.com
@@ -401,11 +401,4 @@ If default ports conflict, modify the port mappings in `docker-compose.yml` befo
 - **Script Help:** `./start-teratestnet.sh --help`
 - **Docker Issues:** Check Docker documentation
 - **Ngrok Issues:** Visit [ngrok documentation](https://ngrok.com/docs)
-- **Teranode Issues:** Consult Teranode documentation
-
-## Related Documentation
-
-- [NGROK_PREREQUISITES.md](./NGROK_PREREQUISITES.md) - Detailed ngrok installation guide
-- [../README.md](../README.md) - Parent directory documentation
-- [Docker Compose Documentation](https://docs.docker.com/compose/)
-- [Ngrok Documentation](https://ngrok.com/docs)
+- **Teranode Issues:** Consult [Teranode documentation](https://bsv-blockchain.github.io/teranode/)
