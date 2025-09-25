@@ -33,8 +33,8 @@ This script automates the setup and configuration of a Teratestnet node using Do
 ### System Requirements
 
 - Linux, macOS, or Windows with WSL2
-- Minimum 4GB RAM recommended
-- 20GB+ available disk space
+- Minimum 32GB RAM recommended
+- 40GB+ available disk space
 - Active internet connection
 
 ### Required open firewall ports (if not using Ngrok)
