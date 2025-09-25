@@ -204,7 +204,7 @@ Is this correct? (y/n): y
 
 ## Settings Modified
 
-https://docs.google.com/document/d/1BsTx3bkfTNXWL2h-iaOpm1CLt7rCCMhtCHjgf7ooKwE/edit?usp=sharingThe script modifies the following settings in `../base/settings.conf`:
+The script modifies the following settings in `../base/settings.conf`:
 
 | Setting | Description | Example Value |
 |---------|-------------|---------------|
