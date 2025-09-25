@@ -74,7 +74,6 @@ services:
     command: --config-file /etc/aerospike.conf
     networks:
       - teranode-network
-    user: "${USER_ID}:${GROUP_ID}"
     ports:
       - 3000:3000
     expose:
@@ -97,7 +96,6 @@ services:
     image: aerospike/aerospike-server-enterprise:8.1
     networks:
       - teranode-network
-    user: "${USER_ID}:${GROUP_ID}"
     ports:
       - 3000:3000
     expose:
