@@ -18,12 +18,14 @@ volumes:
 
 services:
   # Initialize directories with correct ownership
+  # Note: Runs as root to create directories and set ownership before other services start
   data-init:
     image: alpine:latest
     volumes:
       - ${DATA_PATH}:/data
-    command: sh -c "mkdir -p /data/postgres /data/aerospike/data /data/aerospike/smd /data/aerospike/asmt /data/teranode /data/prometheus /data/grafana/grafana.db && chown -R ${USER_ID}:${GROUP_ID} /data"
-    user: "0:0"
+      - ./scripts/init-data.sh:/init-data.sh:ro
+    command: sh /init-data.sh
+    user: "0:0"  # Required for chown operations
 
   # Teranode micro-services
   blockchain:
