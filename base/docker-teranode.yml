@@ -3,6 +3,7 @@ x-teranode-base:
   image: ghcr.io/bitcoin-sv/teranode:v0.9.97
   networks:
     - teranode-network
+  user: "${USER_ID}:${GROUP_ID}"
   volumes:
     - ./wait.sh:/app/wait.sh
     - ./entrypoint.sh:/app/entrypoint.sh

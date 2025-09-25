@@ -13,13 +13,26 @@ networks:
     # if your docker setup supports IPv6, you can enable it here
     # enable_ipv6: true
 
+volumes:
+  nginx-cache:
+
 services:
+  # Initialize directories with correct ownership
+  data-init:
+    image: alpine:latest
+    volumes:
+      - ${DATA_PATH}:/data
+    command: sh -c "mkdir -p /data/postgres /data/aerospike/data /data/aerospike/smd /data/aerospike/asmt /data/teranode /data/prometheus /data/grafana/grafana.db && chown -R ${USER_ID}:${GROUP_ID} /data"
+    user: "0:0"
+
   # Teranode micro-services
   blockchain:
     extends:
       file: ./base/docker-teranode.yml
       service: blockchain
     <<: *teranode-settings
+    depends_on:
+      - data-init
 
   asset:
     extends:
