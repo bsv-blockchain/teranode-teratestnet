@@ -24,6 +24,9 @@ services:
     volumes:
       - ${DATA_PATH}:/data
       - ./scripts/init-data.sh:/init-data.sh:ro
+    environment:
+      - USER_ID=${USER_ID}
+      - GROUP_ID=${GROUP_ID}
     command: sh /init-data.sh
     user: "0:0"  # Required for chown operations
 
