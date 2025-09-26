@@ -365,30 +365,12 @@ start_docker_compose() {
 
     cd "$SCRIPT_DIR"
 
-    # Export mining environment variables
-    export MINING_ENABLED="${MINING_ENABLED:-false}"
-    export MINING_ADDRESS="${MINING_ADDRESS:-}"
-    export MINING_SIG="${MINER_ID:-}"
-
-    # Export RPC credentials for miner (use defaults if not set)
-    export RPC_USER="${RPC_USER:-bitcoin}"
-    export RPC_PASS="${RPC_PASS:-bitcoin}"
-
-    # Determine which profile to use
+    # Determine compose command
     local compose_cmd=""
-    if [ "$MINING_ENABLED" = "true" ]; then
-        echo_info "Mining is enabled, starting with mining profile..."
-        if command -v docker compose &> /dev/null; then
-            compose_cmd="docker compose --profile mining up -d"
-        else
-            compose_cmd="docker-compose --profile mining up -d"
-        fi
+    if command -v docker compose &> /dev/null; then
+        compose_cmd="docker compose up -d"
     else
-        if command -v docker compose &> /dev/null; then
-            compose_cmd="docker compose up -d"
-        else
-            compose_cmd="docker-compose up -d"
-        fi
+        compose_cmd="docker-compose up -d"
     fi
 
     echo_info "Running: $compose_cmd"
@@ -396,9 +378,6 @@ start_docker_compose() {
 
     if [ $? -eq 0 ]; then
         echo_info "Docker Compose started successfully."
-        if [ "$MINING_ENABLED" = "true" ]; then
-            echo_info "CPU miner container will start mining shortly..."
-        fi
     else
         echo_error "Failed to start Docker Compose."
         exit 1
@@ -550,6 +529,10 @@ show_completion_message() {
     fi
     echo
 
+    echo_info "Web Interface:"
+    echo "  - Visit http://localhost:8090 in your browser to view the WebUI"
+    echo
+
     if [ "$LISTEN_MODE" = "full" ]; then
         echo "Endpoints:"
         echo "  - RPC endpoint: ${NGROK_URL}:9292"
@@ -573,19 +556,32 @@ show_completion_message() {
     echo
 
     if [ "$MINING_ENABLED" = "true" ]; then
-        echo "Mining Status:"
-        echo "  - CPU Miner: ENABLED"
+        echo "Mining Configuration:"
         echo "  - Mining Address: $MINING_ADDRESS"
         echo "  - Miner ID: $MINER_ID"
         echo "  - CPU Threads: 2"
-        echo "  - Container: cpuminer"
         echo
-        echo "Monitor mining:"
-        echo "  - Logs: docker logs -f cpuminer"
-        echo "  - Stop mining: docker compose --profile mining down"
+        echo_info "To start CPU mining, run the following command:"
+        echo
+        echo "  docker run -d --name cpuminer \\"
+        echo "    --network teranode-teratestnet_teranode-network \\"
+        echo "    ghcr.io/bitcoin-sv/cpuminer:latest \\"
+        echo "    --url=http://rpc:9292 \\"
+        echo "    --userpass=${RPC_USER:-bitcoin}:${RPC_PASS:-bitcoin} \\"
+        echo "    --coinbase-addr=$MINING_ADDRESS \\"
+        echo "    --coinbase-sig=\"$MINER_ID\" \\"
+        echo "    --threads=2"
+        echo
+        echo "After starting the miner:"
+        echo "  - Monitor logs: docker logs -f cpuminer"
+        echo "  - Stop mining: docker stop cpuminer && docker rm cpuminer"
     else
         echo "Mining Status: DISABLED"
     fi
+    echo
+
+    echo_info "To monitor important logs, run:"
+    echo "  docker compose logs -f -n 100 blockchain blockvalidation blockassembly subtreevalidation"
     echo
 
     echo "To stop services:"
