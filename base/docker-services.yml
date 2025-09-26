@@ -9,9 +9,7 @@ services:
       POSTGRES_PASSWORD: really_strong_password_change_me
       POSTGRES_DB: postgres
     ports:
-      - 5432:5432
-    expose:
-      - 5432
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     entrypoint: ["/bin/bash", "-c"]
@@ -53,9 +51,9 @@ services:
       - --pandaproxy-addr 0.0.0.0:9093
       - --advertise-pandaproxy-addr localhost:9093
     ports:
-      - 8081
-      - 9092:9092
-      - 9093:9093
+      - "127.0.0.1:8081:8081"
+      - "127.0.0.1:9092:9092"
+      - "127.0.0.1:9093:9093"
 
   # kafka-console-shared:
   #   container_name: kafka-console-shared
@@ -74,7 +72,7 @@ services:
   #           enabled: true
   #           urls: ["http://kafka-shared:8081"]
   #   ports:
-  #     - 8080:8080
+  #     - "127.0.0.1:8080:8080"
   #   depends_on:
   #     - kafka-shared
 
@@ -86,11 +84,7 @@ services:
     networks:
       - teranode-network
     ports:
-      - 3000:3000
-    expose:
-      - 3000
-      - 3001
-      - 3002
+      - "127.0.0.1:3000:3000"
     restart: unless-stopped
     ulimits:
       nofile:
@@ -110,11 +104,7 @@ services:
     networks:
       - teranode-network
     ports:
-      - 3000:3000
-    expose:
-      - 3000
-      - 3001
-      - 3002
+      - "127.0.0.1:3000:3000"
     restart: unless-stopped
     ulimits:
       nofile:
@@ -147,7 +137,7 @@ services:
     container_name: prometheus
     image: prom/prometheus:v2.44.0
     ports:
-      - 9090:9090
+      - "127.0.0.1:9090:9090"
     networks:
       - teranode-network
     volumes:
@@ -158,7 +148,7 @@ services:
     container_name: grafana
     image: grafana/grafana:latest
     ports:
-      - 3005:3000
+      - "127.0.0.1:3005:3000"
     networks:
       - teranode-network
     volumes:
@@ -175,7 +165,7 @@ services:
     networks:
       - teranode-network
     ports:
-      - 8000:8000
+      - "127.0.0.1:8000:8000"
     depends_on:
       - asset
     volumes:
