@@ -535,9 +535,8 @@ show_completion_message() {
 
     if [ "$LISTEN_MODE" = "full" ]; then
         echo "Endpoints:"
-        echo "  - RPC endpoint: ${NGROK_URL}:9292"
+        echo "  - RPC endpoint: http://localhost:9292"
         echo "  - Asset API: ${NGROK_URL}/api/v1"
-        echo "  - P2P advertise: ${NGROK_DOMAIN}"
     else
         echo "Endpoints (local only - listen-only mode):"
         echo "  - RPC endpoint: http://localhost:9292"
