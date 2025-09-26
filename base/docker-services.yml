@@ -15,7 +15,7 @@ services:
       - 5432
     volumes:
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
-      - ${DATA_PATH}/postgres:/var/lib/postgresql/data
+      - ${DATA_PATH}/postgres:/var/lib/postgresql
     restart: on-failure
     depends_on:
       - data-init
@@ -81,6 +81,10 @@ services:
       - 3001
       - 3002
     restart: unless-stopped
+    ulimits:
+      nofile:
+        soft: 32768
+        hard: 32768
     volumes:
       - ./aerospike.conf:/etc/aerospike.conf
       - ${DATA_PATH}/aerospike/data:/opt/aerospike/data
@@ -104,6 +108,10 @@ services:
       - 3002
     restart: unless-stopped
     stop_grace_period: 600s # to allow ASMT to backup the indexes for warm restarts
+    ulimits:
+      nofile:
+        soft: 32768
+        hard: 32768
     volumes:
       - ./aerospike-ee.conf:/etc/aerospike.conf
       - ./aerospike-asmt-wrapper.sh:/aerospike-asmt-wrapper.sh:ro
