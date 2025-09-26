@@ -44,7 +44,7 @@ echo_warning() {
 
 check_prerequisites() {
     echo_info "Checking prerequisites..."
-    
+
     if [ "$USE_NGROK" = true ]; then
         if ! command -v ngrok &> /dev/null; then
             echo_error "ngrok is not installed. Please install ngrok and configure it with an auth token."
@@ -53,22 +53,22 @@ check_prerequisites() {
             exit 1
         fi
     fi
-    
+
     if ! command -v docker &> /dev/null; then
         echo_error "Docker is not installed. Please install Docker."
         exit 1
     fi
-    
+
     if ! command -v docker compose &> /dev/null && ! command -v docker-compose &> /dev/null; then
         echo_error "Docker Compose is not installed. Please install Docker Compose."
         exit 1
     fi
-    
+
     if [ ! -f "$SETTINGS_FILE" ]; then
         echo_error "Settings file not found at: $SETTINGS_FILE"
         exit 1
     fi
-    
+
     echo_info "All prerequisites met."
 }
 
@@ -76,10 +76,10 @@ process_ngrok_url() {
     local input=$1
     local url=""
     local domain=""
-    
+
     # Remove trailing slash if present
     input="${input%/}"
-    
+
     # Check if URL has protocol
     if [[ "$input" =~ ^https?:// ]]; then
         url="$input"
@@ -90,14 +90,14 @@ process_ngrok_url() {
         domain="$input"
         url="https://$input"
     fi
-    
+
     # Remove any path from domain (everything after first /)
     domain="${domain%%/*}"
-    
+
     # Export both formats
     NGROK_URL="$url"
     NGROK_DOMAIN="$domain"
-    
+
     echo_info "Processed ngrok URL:"
     echo "  - Full URL: $NGROK_URL"
     echo "  - Domain only: $NGROK_DOMAIN"
@@ -198,7 +198,7 @@ prompt_for_inputs() {
     # Mining configuration (only for full mode)
     MINING_ENABLED="false"
     MINING_ADDRESS=""
-    MINER_ID=""
+    MINER_TAG=""
 
     if [ "$LISTEN_MODE" = "full" ]; then
         echo
@@ -216,15 +216,15 @@ prompt_for_inputs() {
                 read -p "Enter Bitcoin address for mining rewards: " MINING_ADDRESS
             done
 
-            read -p "Enter Miner ID/Signature (e.g., /YourMinerID/) (optional, press Enter to skip): " MINER_ID
-            if [ -z "$MINER_ID" ]; then
-                MINER_ID="/Teratestnet/"
-                echo_info "Using default miner ID: $MINER_ID"
+            read -p "Enter Miner Tag/Signature (e.g., /YourMinerTag/) (optional, press Enter to skip): " MINER_TAG
+            if [ -z "$MINER_TAG" ]; then
+                MINER_TAG="/Teratestnet/"
+                echo_info "Using default miner tag: $MINER_TAG"
             fi
 
             echo_info "Mining will be enabled with:"
             echo "  - Mining address: $MINING_ADDRESS"
-            echo "  - Miner ID: $MINER_ID"
+            echo "  - Miner Tag: $MINER_TAG"
             echo "  - CPU threads: 2"
         else
             echo_info "Mining disabled"
@@ -253,7 +253,7 @@ prompt_for_inputs() {
     if [ "$MINING_ENABLED" = "true" ]; then
         echo "  - Mining: Enabled"
         echo "  - Mining Address: $MINING_ADDRESS"
-        echo "  - Miner ID: $MINER_ID"
+        echo "  - Miner Tag: $MINER_TAG"
     else
         echo "  - Mining: Disabled"
     fi
@@ -278,7 +278,7 @@ backup_settings() {
 portable_sed_inplace() {
     local pattern="$1"
     local file="$2"
-    
+
     if [[ "$OSTYPE" == "darwin"* ]]; then
         # macOS requires backup extension for in-place editing
         sed -i '' "$pattern" "$file"
@@ -335,13 +335,13 @@ update_settings() {
         echo_warning "RPC credentials not configured. Remember to add them manually to settings.conf"
     fi
 
-    if [ -n "$MINER_ID" ]; then
+    if [ -n "$MINER_TAG" ]; then
         if grep -q "^coinbase_arbitrary_text" "$temp_file"; then
-            portable_sed_inplace "s|^coinbase_arbitrary_text.*|coinbase_arbitrary_text = ${MINER_ID}|" "$temp_file"
-            echo_info "Updated coinbase_arbitrary_text (Miner ID)"
+            portable_sed_inplace "s|^coinbase_arbitrary_text.*|coinbase_arbitrary_text = ${MINER_TAG}|" "$temp_file"
+            echo_info "Updated coinbase_arbitrary_text (Miner Tag)"
         else
-            echo "coinbase_arbitrary_text = ${MINER_ID}" >> "$temp_file"
-            echo_info "Added coinbase_arbitrary_text (Miner ID)"
+            echo "coinbase_arbitrary_text = ${MINER_TAG}" >> "$temp_file"
+            echo_info "Added coinbase_arbitrary_text (Miner Tag)"
         fi
     fi
 
@@ -467,17 +467,17 @@ start_ngrok() {
 
 set_fsm_state_running() {
     echo_info "Setting FSM state to RUNNING..."
-    
+
     # Wait for blockchain container to be ready with retry loop
     local max_attempts=10
     local attempt=1
     local wait_time=6  # 6 seconds between attempts = 60 seconds total
-    
+
     echo_info "Waiting for blockchain service to be ready..."
-    
+
     while [ $attempt -le $max_attempts ]; do
         echo_info "Checking blockchain container status (attempt $attempt/$max_attempts)..."
-        
+
         # Check if blockchain container is running
         if docker ps | grep "blockchain"; then
             # Try to execute a simple command to verify the container is responsive
@@ -490,18 +490,18 @@ set_fsm_state_running() {
         else
             echo_info "Blockchain container not yet running..."
         fi
-        
+
         if [ $attempt -eq $max_attempts ]; then
             echo_error "Blockchain container failed to start after $max_attempts attempts (60 seconds)"
             echo_error "Cannot set FSM state to RUNNING"
             exit 1
         fi
-        
+
         echo_info "Waiting ${wait_time} seconds before retry..."
         sleep $wait_time
         attempt=$((attempt + 1))
     done
-    
+
     # Execute the FSM state transition command
     echo_info "Executing: docker exec -it blockchain teranode-cli setfsmstate --fsmstate RUNNING"
     if docker exec -it blockchain teranode-cli setfsmstate --fsmstate RUNNING; then
@@ -558,7 +558,7 @@ show_completion_message() {
     if [ "$MINING_ENABLED" = "true" ]; then
         echo "Mining Configuration:"
         echo "  - Mining Address: $MINING_ADDRESS"
-        echo "  - Miner ID: $MINER_ID"
+        echo "  - Miner Tag: $MINER_TAG"
         echo "  - CPU Threads: 2"
         echo
         echo_info "To start CPU mining, run the following command:"
@@ -569,7 +569,7 @@ show_completion_message() {
         echo "    --url=http://rpc:9292 \\"
         echo "    --userpass=${RPC_USER:-bitcoin}:${RPC_PASS:-bitcoin} \\"
         echo "    --coinbase-addr=$MINING_ADDRESS \\"
-        echo "    --coinbase-sig=\"$MINER_ID\" \\"
+        echo "    --coinbase-sig=\"$MINER_TAG\" \\"
         echo "    --threads=2"
         echo
         echo "After starting the miner:"
@@ -610,7 +610,7 @@ main() {
     fi
     echo "======================================"
     echo
-    
+
     check_prerequisites
     prompt_for_inputs
     backup_settings

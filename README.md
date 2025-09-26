@@ -24,7 +24,7 @@ Automated setup for Teranode on the Teratestnet network using Docker Compose.
 1. Configures your Teranode instance with:
    - Domain/URL (ngrok or custom)
    - RPC credentials
-   - Optional Miner ID
+   - Optional Miner Tag
 2. Starts all required services via Docker Compose
 3. Sets up networking (ngrok tunnel or your custom domain)
 

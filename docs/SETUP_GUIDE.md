@@ -76,9 +76,9 @@ The script automatically:
   - Must be confirmed (entered twice)
   - Hidden during input for security
 
-### 4. Miner ID (Optional)
+### 4. Miner Tag (Optional)
 
-- **Prompt:** "Enter Miner ID (optional, press Enter to skip)"
+- **Prompt:** "Enter Miner Tag (optional, press Enter to skip)"
 - **Purpose:** Sets the `coinbase_arbitrary_string` in the configuration
 - **Requirements:**
   - Optional field
@@ -108,14 +108,14 @@ Enter your ngrok domain (e.g., example.ngrok-free.app): mynode.ngrok-free.app
 Enter RPC username: alice
 Enter RPC password: [hidden]
 Confirm RPC password: [hidden]
-Enter Miner ID (optional, press Enter to skip): AliceNode-01
+Enter Miner Tag (optional, press Enter to skip): AliceNode-01
 
 [INFO] Configuration summary:
   - Ngrok Domain: mynode.ngrok-free.app
   - Full URL: https://mynode.ngrok-free.app
   - RPC Username: alice
   - RPC Password: [hidden]
-  - Miner ID: AliceNode-01
+  - Miner Tag: AliceNode-01
 
 Is this correct? (y/n): y
 ```
@@ -142,7 +142,7 @@ Enter your domain/URL (e.g., teranode.example.com): teranode.mydomain.com
 Enter RPC username: nodeoperator
 Enter RPC password: [hidden]
 Confirm RPC password: [hidden]
-Enter Miner ID (optional, press Enter to skip):
+Enter Miner Tag (optional, press Enter to skip):
 
 [INFO] Configuration summary:
   - Domain: teranode.mydomain.com
@@ -157,13 +157,13 @@ Is this correct? (y/n): y
 
 The script modifies the following settings in `../base/settings.conf`:
 
-| Setting | Description | Example Value |
-|---------|-------------|---------------|
-| `asset_httpAddress` | Internal HTTP address for asset service | `https://example.ngrok-free.app/api/v1` |
-| `asset_httpPublicAddress` | Public HTTP address for asset service | `https://example.ngrok-free.app/api/v1` |
-| `rpc_user` | RPC authentication username | `myuser` |
-| `rpc_pass` | RPC authentication password | `mypassword` |
-| `coinbase_arbitrary_string` | Miner identification string (optional) | `MyMiner-01` |
+| Setting                     | Description                             | Example Value                           |
+|-----------------------------|-----------------------------------------|-----------------------------------------|
+| `asset_httpAddress`         | Internal HTTP address for asset service | `https://example.ngrok-free.app/api/v1` |
+| `asset_httpPublicAddress`   | Public HTTP address for asset service   | `https://example.ngrok-free.app/api/v1` |
+| `rpc_user`                  | RPC authentication username             | `myuser`                                |
+| `rpc_pass`                  | RPC authentication password             | `mypassword`                            |
+| `coinbase_arbitrary_string` | Miner tag string (optional)             | `MyMiner-01`                            |
 
 ### Important Notes:
 

@@ -18,7 +18,7 @@ This guide covers:
 
 - **CPU**: Minimum 8 cores (16+ recommended)
 - **RAM**: Minimum 32GB (64GB+ recommended)
-- **Storage**: 
+- **Storage**:
   - SSD with at least 500GB free space
   - NVMe recommended for Aerospike and block storage
 - **Operating System**: Linux (Ubuntu 20.04+ or similar)
@@ -181,7 +181,7 @@ namespace utxo-store {
     replication-factor 1
     memory-size 4G
     nsup-period 120
-    
+
     storage-engine device {
         device /opt/aerospike/data/utxo.dat
         filesize 50G
@@ -398,7 +398,7 @@ docker run -d \
   --url=http://localhost:9292 \
   --userpass=bitcoin:bitcoin \
   --coinbase-addr=<YOUR_MINING_ADDRESS> \
-  --coinbase-sig="/YourMinerID/" \
+  --coinbase-sig="/YourMinerTag/" \
   --threads=2
 ```
 
@@ -412,7 +412,7 @@ Using the helper script:
 ### 3. Customize miner settings
 
 - `--coinbase-addr`: Your Bitcoin address for mining rewards
-- `--coinbase-sig`: Your miner identification (appears in blocks you mine)
+- `--coinbase-sig`: Your miner tag (appears in blocks you mine)
 - `--threads`: Number of CPU threads to use (adjust based on your system)
 - `--url`: RPC endpoint of your Teranode (default: http://localhost:9292)
 - `--userpass`: RPC credentials (default: bitcoin:bitcoin)
