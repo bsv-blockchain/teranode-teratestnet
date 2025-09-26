@@ -4,7 +4,6 @@ services:
     image: postgres:latest
     networks:
       - teranode-network
-    user: "${USER_ID}:${GROUP_ID}"
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: really_strong_password_change_me
@@ -15,10 +14,8 @@ services:
       - 5432
     volumes:
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
-      - ${DATA_PATH}/postgres:/var/lib/postgresql/data
+      - postgres-data:/var/lib/postgresql/data
     restart: on-failure
-    depends_on:
-      - data-init
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 5s
@@ -81,14 +78,16 @@ services:
       - 3001
       - 3002
     restart: unless-stopped
+    ulimits:
+      nofile:
+        soft: 32768
+        hard: 32768
     volumes:
       - ./aerospike.conf:/etc/aerospike.conf
-      - ${DATA_PATH}/aerospike/data:/opt/aerospike/data
-      - ${DATA_PATH}/aerospike/smd:/opt/aerospike/smd
+      - aerospike-data:/opt/aerospike/data
+      - aerospike-smd:/opt/aerospike/smd
     privileged: true  # Allow the container to access raw devices
     hostname: aerospike
-    depends_on:
-      - data-init
 
   # Aerospike Enterprise Edition
   aerospike-ee:
@@ -103,18 +102,20 @@ services:
       - 3001
       - 3002
     restart: unless-stopped
+    ulimits:
+      nofile:
+        soft: 32768
+        hard: 32768
     stop_grace_period: 600s # to allow ASMT to backup the indexes for warm restarts
     volumes:
       - ./aerospike-ee.conf:/etc/aerospike.conf
       - ./aerospike-asmt-wrapper.sh:/aerospike-asmt-wrapper.sh:ro
-      - ${DATA_PATH}/aerospike/data:/opt/aerospike/data
-      - ${DATA_PATH}/aerospike/smd:/opt/aerospike/smd
-      - ${DATA_PATH}/aerospike/asmt:/backup/indexes
+      - aerospike-data:/opt/aerospike/data
+      - aerospike-smd:/opt/aerospike/smd
+      - aerospike-asmt:/backup/indexes
     entrypoint: ["/bin/bash", "/aerospike-asmt-wrapper.sh"]
     privileged: true  # Allow the container to access raw devices
     hostname: aerospike
-    depends_on:
-      - data-init
 
   # Aerospike exporter for the primary node
   aerospike-exporter:
@@ -135,12 +136,9 @@ services:
       - 9090:9090
     networks:
       - teranode-network
-    user: "${USER_ID}:${GROUP_ID}"
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
-      - ${DATA_PATH}/prometheus:/prometheus
-    depends_on:
-      - data-init
+      - prometheus-data:/prometheus
 
   grafana:
     container_name: grafana
@@ -149,15 +147,13 @@ services:
       - 3005:3000
     networks:
       - teranode-network
-    user: "${USER_ID}:${GROUP_ID}"
     volumes:
       - ./grafana_datasource.yaml:/etc/grafana/provisioning/datasources/main.yaml
       - ./grafana_dashboards/main.yaml:/etc/grafana/provisioning/dashboards/main.yaml
       - ./grafana_dashboards:/var/lib/grafana/dashboards
-      - ${DATA_PATH}/grafana/grafana.db:/var/lib/grafana
+      - grafana-data:/var/lib/grafana
     depends_on:
       - prometheus
-      - data-init
 
   asset-cache:
     container_name: asset-cache

@@ -3,12 +3,11 @@ x-teranode-base:
   image: ghcr.io/bsv-blockchain/teranode:v0.10.2
   networks:
     - teranode-network
-  user: "${USER_ID}:${GROUP_ID}"
   volumes:
     - ./wait.sh:/app/wait.sh
     - ./entrypoint.sh:/app/entrypoint.sh
     - ./settings_local.conf:/app/settings_local.conf
-    - ${DATA_PATH}/teranode:/app/data
+    - teranode-data:/app/data
   expose:
     - 3005
     - 8081-8093
