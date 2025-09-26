@@ -422,9 +422,9 @@ start_ngrok() {
     echo
     echo_info "Please open a new terminal window and run the following command:"
     echo
-    echo -e "${GREEN}    ngrok http --url=${NGROK_DOMAIN} 8090${NC}"
+    echo -e "${GREEN}    ngrok http --url=${NGROK_DOMAIN} 8000${NC}"
     echo
-    echo_info "This will create a tunnel from ${NGROK_URL} to your local Teranode asset service."
+    echo_info "This will create a tunnel from ${NGROK_URL} to your local Teranode asset cache service."
     echo
     echo_info "After starting ngrok, you can verify it's running at: http://localhost:4040"
     echo
@@ -442,7 +442,7 @@ start_ngrok() {
             # Check if the ngrok API is accessible and get tunnel info
             if curl -s http://localhost:4040/api/tunnels 2>/dev/null | grep -q "${NGROK_DOMAIN}"; then
                 echo_info "ngrok verified successfully!"
-                echo_info "Tunnel established: ${NGROK_URL} -> localhost:8090"
+                echo_info "Tunnel established: ${NGROK_URL} -> localhost:8000"
                 echo_info "You can monitor ngrok at: http://localhost:4040"
                 return
             else
