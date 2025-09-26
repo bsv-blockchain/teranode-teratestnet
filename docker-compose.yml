@@ -15,29 +15,21 @@ networks:
 
 volumes:
   nginx-cache:
+  postgres-data:
+  aerospike-data:
+  aerospike-smd:
+  aerospike-asmt:
+  teranode-data:
+  prometheus-data:
+  grafana-data:
 
 services:
-  # Initialize directories with correct ownership
-  # Note: Runs as root to create directories and set ownership before other services start
-  data-init:
-    image: alpine:latest
-    volumes:
-      - ${DATA_PATH}:/data
-      - ./scripts/init-data.sh:/init-data.sh:ro
-    environment:
-      - USER_ID=${USER_ID}
-      - GROUP_ID=${GROUP_ID}
-    command: sh /init-data.sh
-    user: "0:0"  # Required for chown operations
-
   # Teranode micro-services
   blockchain:
     extends:
       file: ./base/docker-teranode.yml
       service: blockchain
     <<: *teranode-settings
-    depends_on:
-      - data-init
 
   asset:
     extends:
