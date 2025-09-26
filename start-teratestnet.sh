@@ -568,7 +568,7 @@ show_completion_message() {
         echo "    --url=http://rpc:9292 \\"
         echo "    --algo=sha256d \\"
         echo "    --always-gmc \\"
-	echo "    --retries=1 \\"
+        echo "    --retries=1 \\"
         echo "    --userpass=${RPC_USER:-bitcoin}:${RPC_PASS:-bitcoin} \\"
         echo "    --coinbase-addr=$MINING_ADDRESS \\"
         echo "    --coinbase-sig=\"$MINER_TAG\" \\"
