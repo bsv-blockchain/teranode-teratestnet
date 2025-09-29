@@ -47,9 +47,7 @@ docker compose down
 docker compose down -v
 
 # Reset to start syncing from genesis
-docker compose down
 ./reset-data.sh
-docker compose up -d
 ```
 
 ## Documentation
