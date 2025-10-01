@@ -382,59 +382,50 @@ portable_sed_inplace() {
 generate_settings_from_template() {
     echo_info "Generating settings_local.conf from template..."
 
-    local temp_file="${SETTINGS_FILE}.tmp"
-    cp "$SETTINGS_TEMPLATE" "$temp_file"
+    cp "$SETTINGS_TEMPLATE" "$SETTINGS_FILE"
 
     # Remove all commented lines and empty lines, creating a clean base
-    sed -i.bak '/^#/d; /^$/d' "$temp_file"
-    rm -f "${temp_file}.bak"
+    portable_sed_inplace '/^#/d; /^$/d' "$SETTINGS_FILE"
 }
 
 update_settings() {
     echo_info "Updating settings_local.conf..."
 
-    local temp_file="${SETTINGS_FILE}.tmp"
-
-    if [ ! -f "$temp_file" ]; then
-        # Generate from template if not already done
-        generate_settings_from_template
-    fi
-
     # Configure listen_mode
-    if grep -q "^listen_mode" "$temp_file"; then
-        portable_sed_inplace "s|^listen_mode.*|listen_mode = ${LISTEN_MODE}|" "$temp_file"
+    if grep -q "^listen_mode" "$SETTINGS_FILE"; then
+        portable_sed_inplace "s|^listen_mode.*|listen_mode = ${LISTEN_MODE}|" "$SETTINGS_FILE"
         echo_info "Updated listen_mode to: ${LISTEN_MODE}"
     else
-        echo "listen_mode = ${LISTEN_MODE}" >> "$temp_file"
+        echo "listen_mode = ${LISTEN_MODE}" >> "$SETTINGS_FILE"
         echo_info "Added listen_mode: ${LISTEN_MODE}"
     fi
 
     # Only update asset_httpPublicAddress for full mode
     if [ "$LISTEN_MODE" = "full" ]; then
-        if grep -q "^asset_httpPublicAddress" "$temp_file"; then
-            portable_sed_inplace "s|^asset_httpPublicAddress.*|asset_httpPublicAddress.docker.m = ${NGROK_URL}/api/v1|" "$temp_file"
+        if grep -q "^asset_httpPublicAddress" "$SETTINGS_FILE"; then
+            portable_sed_inplace "s|^asset_httpPublicAddress.*|asset_httpPublicAddress.docker.m = ${NGROK_URL}/api/v1|" "$SETTINGS_FILE"
             echo_info "Updated asset_httpPublicAddress"
         else
-            echo "asset_httpPublicAddress.docker.m = ${NGROK_URL}/api/v1" >> "$temp_file"
+            echo "asset_httpPublicAddress.docker.m = ${NGROK_URL}/api/v1" >> "$SETTINGS_FILE"
             echo_info "Added asset_httpPublicAddress"
         fi
     fi
 
     # Only update RPC credentials if they were provided
     if [ -n "$RPC_USER" ]; then
-        if grep -q "^rpc_user" "$temp_file"; then
-            portable_sed_inplace "s|^rpc_user.*|rpc_user = ${RPC_USER}|" "$temp_file"
+        if grep -q "^rpc_user" "$SETTINGS_FILE"; then
+            portable_sed_inplace "s|^rpc_user.*|rpc_user = ${RPC_USER}|" "$SETTINGS_FILE"
             echo_info "Updated rpc_user"
         else
-            echo "rpc_user = ${RPC_USER}" >> "$temp_file"
+            echo "rpc_user = ${RPC_USER}" >> "$SETTINGS_FILE"
             echo_info "Added rpc_user"
         fi
 
-        if grep -q "^rpc_pass" "$temp_file"; then
-            portable_sed_inplace "s|^rpc_pass.*|rpc_pass = ${RPC_PASS}|" "$temp_file"
+        if grep -q "^rpc_pass" "$SETTINGS_FILE"; then
+            portable_sed_inplace "s|^rpc_pass.*|rpc_pass = ${RPC_PASS}|" "$SETTINGS_FILE"
             echo_info "Updated rpc_pass"
         else
-            echo "rpc_pass = ${RPC_PASS}" >> "$temp_file"
+            echo "rpc_pass = ${RPC_PASS}" >> "$SETTINGS_FILE"
             echo_info "Added rpc_pass"
         fi
     else
@@ -442,27 +433,25 @@ update_settings() {
     fi
 
     if [ -n "$MINER_TAG" ]; then
-        if grep -q "^coinbase_arbitrary_text" "$temp_file"; then
-            portable_sed_inplace "s|^coinbase_arbitrary_text.*|coinbase_arbitrary_text = ${MINER_TAG}|" "$temp_file"
+        if grep -q "^coinbase_arbitrary_text" "$SETTINGS_FILE"; then
+            portable_sed_inplace "s|^coinbase_arbitrary_text.*|coinbase_arbitrary_text = ${MINER_TAG}|" "$SETTINGS_FILE"
             echo_info "Updated coinbase_arbitrary_text (Miner Tag)"
         else
-            echo "coinbase_arbitrary_text = ${MINER_TAG}" >> "$temp_file"
+            echo "coinbase_arbitrary_text = ${MINER_TAG}" >> "$SETTINGS_FILE"
             echo_info "Added coinbase_arbitrary_text (Miner Tag)"
         fi
     fi
 
     if [ -n "$CLIENT_NAME" ]; then
-        if grep -q "^clientName" "$temp_file"; then
-            portable_sed_inplace "s|^clientName.*|clientName = ${CLIENT_NAME}|" "$temp_file"
+        if grep -q "^clientName" "$SETTINGS_FILE"; then
+            portable_sed_inplace "s|^clientName.*|clientName = ${CLIENT_NAME}|" "$SETTINGS_FILE"
             echo_info "Updated clientName (Client Name)"
         else
-            echo "clientName = ${CLIENT_NAME}" >> "$temp_file"
+            echo "clientName = ${CLIENT_NAME}" >> "$SETTINGS_FILE"
             echo_info "Added client name (Client Name)"
         fi
     fi
 
-
-    mv "$temp_file" "$SETTINGS_FILE"
     echo_info "Settings updated successfully."
 }
 
