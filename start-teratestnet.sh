@@ -143,7 +143,7 @@ check_existing_config() {
 
         echo "What would you like to do?"
         echo "  1. Use existing configuration (skip setup, just start services)"
-        echo "  2. Reconfigure (generate new settings, backup old one)"
+        echo "  2. Reconfigure (overwrite with new settings)"
         echo
 
         read -p "Select option (1 or 2): " CONFIG_CHOICE
@@ -247,7 +247,7 @@ prompt_for_inputs() {
     echo_info "RPC Credentials Configuration"
     echo_info "You can either:"
     echo "  1. Set RPC credentials now (automatic)"
-    echo "  2. Configure them manually in settings.conf later"
+    echo "  2. Configure them manually in settings_local.conf later"
     echo
     echo_info "Note: RPC credentials are required for remote access to your node"
     echo
@@ -379,7 +379,7 @@ portable_sed_inplace() {
 }
 
 generate_settings_from_template() {
-    echo_info "Generating settings.conf from template..."
+    echo_info "Generating settings_local.conf from template..."
 
     local temp_file="${SETTINGS_FILE}.tmp"
     cp "$SETTINGS_TEMPLATE" "$temp_file"
@@ -390,7 +390,7 @@ generate_settings_from_template() {
 }
 
 update_settings() {
-    echo_info "Updating settings.conf..."
+    echo_info "Updating settings_local.conf..."
 
     local temp_file="${SETTINGS_FILE}.tmp"
 
@@ -437,7 +437,7 @@ update_settings() {
             echo_info "Added rpc_pass"
         fi
     else
-        echo_warning "RPC credentials not configured. Remember to add them manually to settings.conf"
+        echo_warning "RPC credentials not configured. Remember to add them manually to settings_local.conf"
     fi
 
     if [ -n "$MINER_TAG" ]; then
@@ -653,9 +653,9 @@ show_completion_message() {
     echo "Credentials:"
     if [ -n "$RPC_USER" ]; then
         echo "  - RPC Username: $RPC_USER"
-        echo "  - RPC Password: [saved in settings.conf]"
+        echo "  - RPC Password: [saved in settings_local.conf]"
     else
-        echo "  - RPC Credentials: Not configured (add to settings.conf manually)"
+        echo "  - RPC Credentials: Not configured (add to settings_local.conf manually)"
     fi
     echo
 
