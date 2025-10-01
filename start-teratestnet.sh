@@ -94,11 +94,12 @@ load_existing_config() {
         NGROK_DOMAIN="localhost"
     fi
 
-    # Check if we need ngrok (full mode with non-localhost domain)
-    if [ "$LISTEN_MODE" = "full" ] && [ "$NGROK_DOMAIN" != "localhost" ]; then
-        USE_NGROK=true
-    else
-        USE_NGROK=false
+    # Only enable ngrok if domain matches ngrok patterns and mode is full
+    if [ "$LISTEN_MODE" = "full" ]; then
+        if [[ "$NGROK_DOMAIN" == *.ngrok-free.app || "$NGROK_DOMAIN" == *.ngrok.io ]]; then
+            USE_NGROK=true
+        fi
+        # Otherwise, preserve existing USE_NGROK value (do not override)
     fi
 
     echo_info "Loaded configuration from existing file:"
