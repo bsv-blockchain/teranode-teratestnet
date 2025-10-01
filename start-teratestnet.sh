@@ -98,8 +98,9 @@ load_existing_config() {
     if [ "$LISTEN_MODE" = "full" ]; then
         if [[ "$NGROK_DOMAIN" == *.ngrok-free.app || "$NGROK_DOMAIN" == *.ngrok.io ]]; then
             USE_NGROK=true
+        else
+            USE_NGROK=false
         fi
-        # Otherwise, preserve existing USE_NGROK value (do not override)
     fi
 
     echo_info "Loaded configuration from existing file:"
