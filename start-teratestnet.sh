@@ -74,9 +74,9 @@ check_prerequisites() {
 }
 
 load_existing_config() {
-    # Extract listen_mode
+    # Extract listen_mode (prefer namespaced key, fallback to non-namespaced)
     if grep -q "^listen_mode" "$SETTINGS_FILE"; then
-        LISTEN_MODE=$(grep "^listen_mode" "$SETTINGS_FILE" | cut -d'=' -f2 | xargs)
+        LISTEN_MODE=$(grep "^listen_mode" "$SETTINGS_FILE" | head -n1 | cut -d'=' -f2 | xargs)
     else
         LISTEN_MODE="listen_only"
     fi
@@ -124,7 +124,7 @@ check_existing_config() {
 
         # Show key settings from existing file
         if grep -q "^listen_mode" "$SETTINGS_FILE"; then
-            local mode=$(grep "^listen_mode" "$SETTINGS_FILE" | cut -d'=' -f2 | xargs)
+            local mode=$(grep "^listen_mode" "$SETTINGS_FILE" | head -n1 | cut -d'=' -f2 | xargs)
             echo "  Mode: $mode"
         fi
         if grep -q "^asset_httpPublicAddress" "$SETTINGS_FILE"; then
@@ -132,11 +132,11 @@ check_existing_config() {
             echo "  Asset URL: $asset_url"
         fi
         if grep -q "^rpc_user" "$SETTINGS_FILE"; then
-            local rpc_user=$(grep "^rpc_user" "$SETTINGS_FILE" | cut -d'=' -f2 | xargs)
+            local rpc_user=$(grep "^rpc_user" "$SETTINGS_FILE" | head -n1 | cut -d'=' -f2 | xargs)
             echo "  RPC User: $rpc_user"
         fi
         if grep -q "^clientName" "$SETTINGS_FILE"; then
-            local client_name=$(grep "^clientName" "$SETTINGS_FILE" | cut -d'=' -f2 | xargs)
+            local client_name=$(grep "^clientName" "$SETTINGS_FILE" | head -n1 | cut -d'=' -f2 | xargs)
             echo "  Client Name: $client_name"
         fi
         echo "----------------------------------------"
@@ -393,10 +393,10 @@ update_settings() {
 
     # Configure listen_mode
     if grep -q "^listen_mode" "$SETTINGS_FILE"; then
-        portable_sed_inplace "s|^listen_mode.*|listen_mode = ${LISTEN_MODE}|" "$SETTINGS_FILE"
+        portable_sed_inplace "s|^listen_mode.*|listen_mode.docker.m = ${LISTEN_MODE}|" "$SETTINGS_FILE"
         echo_info "Updated listen_mode to: ${LISTEN_MODE}"
     else
-        echo "listen_mode = ${LISTEN_MODE}" >> "$SETTINGS_FILE"
+        echo "listen_mode.docker.m = ${LISTEN_MODE}" >> "$SETTINGS_FILE"
         echo_info "Added listen_mode: ${LISTEN_MODE}"
     fi
 
@@ -414,18 +414,18 @@ update_settings() {
     # Only update RPC credentials if they were provided
     if [ -n "$RPC_USER" ]; then
         if grep -q "^rpc_user" "$SETTINGS_FILE"; then
-            portable_sed_inplace "s|^rpc_user.*|rpc_user = ${RPC_USER}|" "$SETTINGS_FILE"
+            portable_sed_inplace "s|^rpc_user.*|rpc_user.docker.m = ${RPC_USER}|" "$SETTINGS_FILE"
             echo_info "Updated rpc_user"
         else
-            echo "rpc_user = ${RPC_USER}" >> "$SETTINGS_FILE"
+            echo "rpc_user.docker.m = ${RPC_USER}" >> "$SETTINGS_FILE"
             echo_info "Added rpc_user"
         fi
 
         if grep -q "^rpc_pass" "$SETTINGS_FILE"; then
-            portable_sed_inplace "s|^rpc_pass.*|rpc_pass = ${RPC_PASS}|" "$SETTINGS_FILE"
+            portable_sed_inplace "s|^rpc_pass.*|rpc_pass.docker.m = ${RPC_PASS}|" "$SETTINGS_FILE"
             echo_info "Updated rpc_pass"
         else
-            echo "rpc_pass = ${RPC_PASS}" >> "$SETTINGS_FILE"
+            echo "rpc_pass.docker.m = ${RPC_PASS}" >> "$SETTINGS_FILE"
             echo_info "Added rpc_pass"
         fi
     else
@@ -434,21 +434,21 @@ update_settings() {
 
     if [ -n "$MINER_TAG" ]; then
         if grep -q "^coinbase_arbitrary_text" "$SETTINGS_FILE"; then
-            portable_sed_inplace "s|^coinbase_arbitrary_text.*|coinbase_arbitrary_text = ${MINER_TAG}|" "$SETTINGS_FILE"
+            portable_sed_inplace "s|^coinbase_arbitrary_text.*|coinbase_arbitrary_text.docker.m = ${MINER_TAG}|" "$SETTINGS_FILE"
             echo_info "Updated coinbase_arbitrary_text (Miner Tag)"
         else
-            echo "coinbase_arbitrary_text = ${MINER_TAG}" >> "$SETTINGS_FILE"
+            echo "coinbase_arbitrary_text.docker.m = ${MINER_TAG}" >> "$SETTINGS_FILE"
             echo_info "Added coinbase_arbitrary_text (Miner Tag)"
         fi
     fi
 
     if [ -n "$CLIENT_NAME" ]; then
         if grep -q "^clientName" "$SETTINGS_FILE"; then
-            portable_sed_inplace "s|^clientName.*|clientName = ${CLIENT_NAME}|" "$SETTINGS_FILE"
-            echo_info "Updated clientName (Client Name)"
+            portable_sed_inplace "s|^clientName.*|clientName.docker.m = ${CLIENT_NAME}|" "$SETTINGS_FILE"
+            echo_info "Updated clientName"
         else
-            echo "clientName = ${CLIENT_NAME}" >> "$SETTINGS_FILE"
-            echo_info "Added client name (Client Name)"
+            echo "clientName.docker.m = ${CLIENT_NAME}" >> "$SETTINGS_FILE"
+            echo_info "Added clientName"
         fi
     fi
 
