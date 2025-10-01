@@ -52,7 +52,7 @@ services:
 
   kafka-shared:
     container_name: kafka-shared
-    image: redpandadata/redpanda:latest
+    image: redpandadata/redpanda:v25.2.1
     mem_limit: 1024m
     restart: on-failure
     networks:
@@ -139,7 +139,7 @@ services:
 
   # Aerospike exporter for the primary node
   aerospike-exporter:
-    image: aerospike/aerospike-prometheus-exporter:latest
+    image: aerospike/aerospike-prometheus-exporter:1.24.0
     container_name: aerospike-exporter
     environment:
       AS_HOST: aerospike
@@ -162,7 +162,7 @@ services:
 
   grafana:
     container_name: grafana
-    image: grafana/grafana:latest
+    image: grafana/grafana:12.2.0
     ports:
       - "127.0.0.1:3005:3000"
     networks:
