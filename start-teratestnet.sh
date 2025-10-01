@@ -4,7 +4,8 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SETTINGS_FILE="${SCRIPT_DIR}/base/settings_local.conf"
-BACKUP_FILE="${SETTINGS_FILE}.backup.$(date +%Y%m%d_%H%M%S)"
+SETTINGS_TEMPLATE="${SCRIPT_DIR}/base/settings_local.conf.template"
+USE_EXISTING_CONFIG=false
 
 GREEN='\033[0;32m'
 RED='\033[0;31m'
@@ -64,12 +65,108 @@ check_prerequisites() {
         exit 1
     fi
 
-    if [ ! -f "$SETTINGS_FILE" ]; then
-        echo_error "Settings file not found at: $SETTINGS_FILE"
+    if [ ! -f "$SETTINGS_TEMPLATE" ]; then
+        echo_error "Settings template file not found at: $SETTINGS_TEMPLATE"
         exit 1
     fi
 
     echo_info "All prerequisites met."
+}
+
+load_existing_config() {
+    # Extract listen_mode (prefer namespaced key, fallback to non-namespaced)
+    if grep -q "^listen_mode" "$SETTINGS_FILE"; then
+        LISTEN_MODE=$(grep "^listen_mode" "$SETTINGS_FILE" | head -n1 | cut -d'=' -f2 | xargs)
+    else
+        LISTEN_MODE="listen_only"
+    fi
+
+    # Extract asset_httpPublicAddress and derive ngrok URL/domain
+    if grep -q "^asset_httpPublicAddress" "$SETTINGS_FILE"; then
+        local asset_url=$(grep "^asset_httpPublicAddress" "$SETTINGS_FILE" | cut -d'=' -f2 | xargs)
+        # Remove the /api/v1 suffix to get base URL
+        NGROK_URL="${asset_url%/api/v1}"
+        # Extract domain from URL
+        NGROK_DOMAIN="${NGROK_URL#*://}"
+        NGROK_DOMAIN="${NGROK_DOMAIN%%/*}"
+    else
+        NGROK_URL="http://localhost"
+        NGROK_DOMAIN="localhost"
+    fi
+
+    # Only enable ngrok if domain matches ngrok patterns and mode is full
+    if [ "$LISTEN_MODE" = "full" ]; then
+        if [[ "$NGROK_DOMAIN" == *.ngrok-free.app || "$NGROK_DOMAIN" == *.ngrok.io ]]; then
+            USE_NGROK=true
+        else
+            USE_NGROK=false
+        fi
+    fi
+
+    echo_info "Loaded configuration from existing file:"
+    echo "  - Mode: $LISTEN_MODE"
+    if [ "$LISTEN_MODE" = "full" ]; then
+        echo "  - Domain: $NGROK_DOMAIN"
+        echo "  - Full URL: $NGROK_URL"
+    fi
+}
+
+check_existing_config() {
+    if [ -f "$SETTINGS_FILE" ]; then
+        echo
+        echo_info "========================================="
+        echo_info "Existing Configuration Detected"
+        echo_info "========================================="
+        echo
+        echo_info "Found existing settings_local.conf file."
+        echo
+        echo "Current configuration preview:"
+        echo "----------------------------------------"
+
+        # Show key settings from existing file
+        if grep -q "^listen_mode" "$SETTINGS_FILE"; then
+            local mode=$(grep "^listen_mode" "$SETTINGS_FILE" | head -n1 | cut -d'=' -f2 | xargs)
+            echo "  Mode: $mode"
+        fi
+        if grep -q "^asset_httpPublicAddress" "$SETTINGS_FILE"; then
+            local asset_url=$(grep "^asset_httpPublicAddress" "$SETTINGS_FILE" | cut -d'=' -f2 | xargs)
+            echo "  Asset URL: $asset_url"
+        fi
+        if grep -q "^rpc_user" "$SETTINGS_FILE"; then
+            local rpc_user=$(grep "^rpc_user" "$SETTINGS_FILE" | head -n1 | cut -d'=' -f2 | xargs)
+            echo "  RPC User: $rpc_user"
+        fi
+        if grep -q "^clientName" "$SETTINGS_FILE"; then
+            local client_name=$(grep "^clientName" "$SETTINGS_FILE" | head -n1 | cut -d'=' -f2 | xargs)
+            echo "  Client Name: $client_name"
+        fi
+        echo "----------------------------------------"
+        echo
+
+        echo "What would you like to do?"
+        echo "  1. Use existing configuration (skip setup, just start services)"
+        echo "  2. Reconfigure (overwrite with new settings)"
+        echo
+
+        read -p "Select option (1 or 2): " CONFIG_CHOICE
+
+        if [ "$CONFIG_CHOICE" = "1" ]; then
+            USE_EXISTING_CONFIG=true
+            load_existing_config
+            echo_info "Using existing configuration. Skipping setup steps..."
+            return
+        elif [ "$CONFIG_CHOICE" = "2" ]; then
+            USE_EXISTING_CONFIG=false
+            echo_info "Will generate new configuration after prompting for values..."
+            return
+        else
+            echo_error "Invalid selection. Please run the script again and select 1 or 2"
+            exit 1
+        fi
+    else
+        echo_info "No existing configuration found. Will generate new settings_local.conf"
+        USE_EXISTING_CONFIG=false
+    fi
 }
 
 process_ngrok_url() {
@@ -152,7 +249,7 @@ prompt_for_inputs() {
     echo_info "RPC Credentials Configuration"
     echo_info "You can either:"
     echo "  1. Set RPC credentials now (automatic)"
-    echo "  2. Configure them manually in settings.conf later"
+    echo "  2. Configure them manually in settings_local.conf later"
     echo
     echo_info "Note: RPC credentials are required for remote access to your node"
     echo
@@ -269,11 +366,6 @@ prompt_for_inputs() {
     fi
 }
 
-backup_settings() {
-    echo_info "Creating backup of settings.conf..."
-    cp "$SETTINGS_FILE" "$BACKUP_FILE"
-    echo_info "Backup created at: $BACKUP_FILE"
-}
 
 portable_sed_inplace() {
     local pattern="$1"
@@ -288,75 +380,95 @@ portable_sed_inplace() {
     fi
 }
 
-update_settings() {
-    echo_info "Updating settings.conf..."
+escape_sed_replacement() {
+    # Escape special characters for sed replacement string
+    # & is special in sed replacement (references the match)
+    # \ is the escape character itself
+    # / is the delimiter we're using
+    printf '%s' "$1" | sed -e 's/[&/\]/\\&/g'
+}
 
-    local temp_file="${SETTINGS_FILE}.tmp"
-    cp "$SETTINGS_FILE" "$temp_file"
+generate_settings_from_template() {
+    echo_info "Generating settings_local.conf from template..."
+
+    cp "$SETTINGS_TEMPLATE" "$SETTINGS_FILE"
+
+    # Remove all commented lines and empty lines, creating a clean base
+    portable_sed_inplace '/^#/d; /^$/d' "$SETTINGS_FILE"
+}
+
+update_settings() {
+    echo_info "Updating settings_local.conf..."
+
+    # Escape all user-provided values for sed
+    local esc_listen_mode=$(escape_sed_replacement "$LISTEN_MODE")
+    local esc_ngrok_url=$(escape_sed_replacement "$NGROK_URL")
+    local esc_rpc_user=$(escape_sed_replacement "$RPC_USER")
+    local esc_rpc_pass=$(escape_sed_replacement "$RPC_PASS")
+    local esc_miner_tag=$(escape_sed_replacement "$MINER_TAG")
+    local esc_client_name=$(escape_sed_replacement "$CLIENT_NAME")
 
     # Configure listen_mode
-    if grep -q "^listen_mode" "$temp_file"; then
-        portable_sed_inplace "s|^listen_mode.*|listen_mode = ${LISTEN_MODE}|" "$temp_file"
+    if grep -q "^listen_mode" "$SETTINGS_FILE"; then
+        portable_sed_inplace "s|^listen_mode.*|listen_mode.docker.m = ${esc_listen_mode}|" "$SETTINGS_FILE"
         echo_info "Updated listen_mode to: ${LISTEN_MODE}"
     else
-        echo "listen_mode = ${LISTEN_MODE}" >> "$temp_file"
+        echo "listen_mode.docker.m = ${LISTEN_MODE}" >> "$SETTINGS_FILE"
         echo_info "Added listen_mode: ${LISTEN_MODE}"
     fi
 
     # Only update asset_httpPublicAddress for full mode
     if [ "$LISTEN_MODE" = "full" ]; then
-        if grep -q "^asset_httpPublicAddress" "$temp_file"; then
-            portable_sed_inplace "s|^asset_httpPublicAddress.*|asset_httpPublicAddress.docker.m = ${NGROK_URL}/api/v1|" "$temp_file"
+        if grep -q "^asset_httpPublicAddress" "$SETTINGS_FILE"; then
+            portable_sed_inplace "s|^asset_httpPublicAddress.*|asset_httpPublicAddress.docker.m = ${esc_ngrok_url}/api/v1|" "$SETTINGS_FILE"
             echo_info "Updated asset_httpPublicAddress"
         else
-            echo "asset_httpPublicAddress.docker.m = ${NGROK_URL}/api/v1" >> "$temp_file"
+            echo "asset_httpPublicAddress.docker.m = ${NGROK_URL}/api/v1" >> "$SETTINGS_FILE"
             echo_info "Added asset_httpPublicAddress"
         fi
     fi
 
     # Only update RPC credentials if they were provided
     if [ -n "$RPC_USER" ]; then
-        if grep -q "^rpc_user" "$temp_file"; then
-            portable_sed_inplace "s|^rpc_user.*|rpc_user = ${RPC_USER}|" "$temp_file"
+        if grep -q "^rpc_user" "$SETTINGS_FILE"; then
+            portable_sed_inplace "s|^rpc_user.*|rpc_user.docker.m = ${esc_rpc_user}|" "$SETTINGS_FILE"
             echo_info "Updated rpc_user"
         else
-            echo "rpc_user = ${RPC_USER}" >> "$temp_file"
+            echo "rpc_user.docker.m = ${RPC_USER}" >> "$SETTINGS_FILE"
             echo_info "Added rpc_user"
         fi
 
-        if grep -q "^rpc_pass" "$temp_file"; then
-            portable_sed_inplace "s|^rpc_pass.*|rpc_pass = ${RPC_PASS}|" "$temp_file"
+        if grep -q "^rpc_pass" "$SETTINGS_FILE"; then
+            portable_sed_inplace "s|^rpc_pass.*|rpc_pass.docker.m = ${esc_rpc_pass}|" "$SETTINGS_FILE"
             echo_info "Updated rpc_pass"
         else
-            echo "rpc_pass = ${RPC_PASS}" >> "$temp_file"
+            echo "rpc_pass.docker.m = ${RPC_PASS}" >> "$SETTINGS_FILE"
             echo_info "Added rpc_pass"
         fi
     else
-        echo_warning "RPC credentials not configured. Remember to add them manually to settings.conf"
+        echo_warning "RPC credentials not configured. Remember to add them manually to settings_local.conf"
     fi
 
     if [ -n "$MINER_TAG" ]; then
-        if grep -q "^coinbase_arbitrary_text" "$temp_file"; then
-            portable_sed_inplace "s|^coinbase_arbitrary_text.*|coinbase_arbitrary_text = ${MINER_TAG}|" "$temp_file"
+        if grep -q "^coinbase_arbitrary_text" "$SETTINGS_FILE"; then
+            portable_sed_inplace "s|^coinbase_arbitrary_text.*|coinbase_arbitrary_text.docker.m = ${esc_miner_tag}|" "$SETTINGS_FILE"
             echo_info "Updated coinbase_arbitrary_text (Miner Tag)"
         else
-            echo "coinbase_arbitrary_text = ${MINER_TAG}" >> "$temp_file"
+            echo "coinbase_arbitrary_text.docker.m = ${MINER_TAG}" >> "$SETTINGS_FILE"
             echo_info "Added coinbase_arbitrary_text (Miner Tag)"
         fi
     fi
 
     if [ -n "$CLIENT_NAME" ]; then
-        if grep -q "^clientName" "$temp_file"; then
-            portable_sed_inplace "s|^clientName.*|clientName = ${CLIENT_NAME}|" "$temp_file"
-            echo_info "Updated clientName (Client Name)"
+        if grep -q "^clientName" "$SETTINGS_FILE"; then
+            portable_sed_inplace "s|^clientName.*|clientName.docker.m = ${esc_client_name}|" "$SETTINGS_FILE"
+            echo_info "Updated clientName"
         else
-            echo "clientName = ${CLIENT_NAME}" >> "$temp_file"
-            echo_info "Added client name (Client Name)"
+            echo "clientName.docker.m = ${CLIENT_NAME}" >> "$SETTINGS_FILE"
+            echo_info "Added clientName"
         fi
     fi
 
-
-    mv "$temp_file" "$SETTINGS_FILE"
     echo_info "Settings updated successfully."
 }
 
@@ -548,9 +660,9 @@ show_completion_message() {
     echo "Credentials:"
     if [ -n "$RPC_USER" ]; then
         echo "  - RPC Username: $RPC_USER"
-        echo "  - RPC Password: [saved in settings.conf]"
+        echo "  - RPC Password: [saved in settings_local.conf]"
     else
-        echo "  - RPC Credentials: Not configured (add to settings.conf manually)"
+        echo "  - RPC Credentials: Not configured (add to settings_local.conf manually)"
     fi
     echo
 
@@ -592,8 +704,6 @@ show_completion_message() {
         echo "  - ngrok: Stop the ngrok process in its terminal (Ctrl+C)"
     fi
     echo
-    echo "Settings backup: $BACKUP_FILE"
-    echo
 
     if [ "$LISTEN_MODE" = "listen_only" ]; then
         echo_info "Your Teranode is running in listen-only mode!"
@@ -614,9 +724,17 @@ main() {
     echo
 
     check_prerequisites
-    prompt_for_inputs
-    backup_settings
-    update_settings
+    check_existing_config
+
+    # Only run configuration steps if not using existing config
+    if [ "$USE_EXISTING_CONFIG" = false ]; then
+        prompt_for_inputs
+        generate_settings_from_template
+        update_settings
+    else
+        echo_info "Using existing configuration, proceeding to start services..."
+    fi
+
     start_docker_compose
     start_ngrok
     set_fsm_state_running

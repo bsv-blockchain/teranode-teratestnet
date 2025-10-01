@@ -1,0 +1,29 @@
+# Teranode Configuration Template
+# This file is a template - your actual settings will be in settings_local.conf
+# The start-teratestnet.sh script will generate settings_local.conf from this template
+
+# IMPORTANT: All settings use the .docker.m namespace suffix
+# This ensures we override any defaults defined in the main Teranode repo settings.conf
+# for the docker.m context. Without the namespace, our settings would not take precedence.
+
+# Network participation mode
+# Options: listen_only (receive blocks only) or full (full network participation)
+# listen_mode.docker.m = listen_only
+
+# Public address configuration (required for full mode)
+# This should be your public ngrok URL or custom domain
+# asset_httpPublicAddress.docker.m = https://your-domain.ngrok-free.app/api/v1
+
+# P2P network configuration (recommended for full mode)
+# This should be the IP or domain exposed to the public internet, with port 9901 open
+# p2p_advertise_addresses.docker.m = your-domain.example.com
+
+# RPC authentication credentials
+# rpc_user.docker.m = your_username
+# rpc_pass.docker.m = your_password
+
+# Miner configuration (optional)
+# coinbase_arbitrary_text.docker.m = /YourMinerTag/
+
+# Client identification for web interface (optional)
+# clientName.docker.m = My Teranode
