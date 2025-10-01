@@ -70,3 +70,8 @@ For detailed setup instructions, configuration options, troubleshooting, and adv
 - Run `./start-teratestnet.sh --help` for command options
 - Check [docs/SETUP_GUIDE.md](./docs/SETUP_GUIDE.md) for troubleshooting
 - Teranode documentation: https://bsv-blockchain.github.io/teranode/
+
+## Community
+
+Join our Telegram group for announcements and discussions:
+- 📢 [Join Teratestnet Community](https://t.me/+FIcJEMznX0xiMzlk)
