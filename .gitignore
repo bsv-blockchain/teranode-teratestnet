@@ -10,3 +10,10 @@ data/*
 # OS files
 .DS_Store
 Thumbs.db
+
+# LLM files
+.claude
+
+# Teranode settings - generated from template
+base/settings_local.conf
+base/settings_local.conf.backup.*

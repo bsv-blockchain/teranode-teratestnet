@@ -4,7 +4,8 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SETTINGS_FILE="${SCRIPT_DIR}/base/settings_local.conf"
-BACKUP_FILE="${SETTINGS_FILE}.backup.$(date +%Y%m%d_%H%M%S)"
+SETTINGS_TEMPLATE="${SCRIPT_DIR}/base/settings_local.conf.template"
+USE_EXISTING_CONFIG=false
 
 GREEN='\033[0;32m'
 RED='\033[0;31m'
@@ -64,12 +65,106 @@ check_prerequisites() {
         exit 1
     fi
 
-    if [ ! -f "$SETTINGS_FILE" ]; then
-        echo_error "Settings file not found at: $SETTINGS_FILE"
+    if [ ! -f "$SETTINGS_TEMPLATE" ]; then
+        echo_error "Settings template file not found at: $SETTINGS_TEMPLATE"
         exit 1
     fi
 
     echo_info "All prerequisites met."
+}
+
+load_existing_config() {
+    # Extract listen_mode
+    if grep -q "^listen_mode" "$SETTINGS_FILE"; then
+        LISTEN_MODE=$(grep "^listen_mode" "$SETTINGS_FILE" | cut -d'=' -f2 | xargs)
+    else
+        LISTEN_MODE="listen_only"
+    fi
+
+    # Extract asset_httpPublicAddress and derive ngrok URL/domain
+    if grep -q "^asset_httpPublicAddress" "$SETTINGS_FILE"; then
+        local asset_url=$(grep "^asset_httpPublicAddress" "$SETTINGS_FILE" | cut -d'=' -f2 | xargs)
+        # Remove the /api/v1 suffix to get base URL
+        NGROK_URL="${asset_url%/api/v1}"
+        # Extract domain from URL
+        NGROK_DOMAIN="${NGROK_URL#*://}"
+        NGROK_DOMAIN="${NGROK_DOMAIN%%/*}"
+    else
+        NGROK_URL="http://localhost"
+        NGROK_DOMAIN="localhost"
+    fi
+
+    # Check if we need ngrok (full mode with non-localhost domain)
+    if [ "$LISTEN_MODE" = "full" ] && [ "$NGROK_DOMAIN" != "localhost" ]; then
+        USE_NGROK=true
+    else
+        USE_NGROK=false
+    fi
+
+    echo_info "Loaded configuration from existing file:"
+    echo "  - Mode: $LISTEN_MODE"
+    if [ "$LISTEN_MODE" = "full" ]; then
+        echo "  - Domain: $NGROK_DOMAIN"
+        echo "  - Full URL: $NGROK_URL"
+    fi
+}
+
+check_existing_config() {
+    if [ -f "$SETTINGS_FILE" ]; then
+        echo
+        echo_info "========================================="
+        echo_info "Existing Configuration Detected"
+        echo_info "========================================="
+        echo
+        echo_info "Found existing settings_local.conf file."
+        echo
+        echo "Current configuration preview:"
+        echo "----------------------------------------"
+
+        # Show key settings from existing file
+        if grep -q "^listen_mode" "$SETTINGS_FILE"; then
+            local mode=$(grep "^listen_mode" "$SETTINGS_FILE" | cut -d'=' -f2 | xargs)
+            echo "  Mode: $mode"
+        fi
+        if grep -q "^asset_httpPublicAddress" "$SETTINGS_FILE"; then
+            local asset_url=$(grep "^asset_httpPublicAddress" "$SETTINGS_FILE" | cut -d'=' -f2 | xargs)
+            echo "  Asset URL: $asset_url"
+        fi
+        if grep -q "^rpc_user" "$SETTINGS_FILE"; then
+            local rpc_user=$(grep "^rpc_user" "$SETTINGS_FILE" | cut -d'=' -f2 | xargs)
+            echo "  RPC User: $rpc_user"
+        fi
+        if grep -q "^clientName" "$SETTINGS_FILE"; then
+            local client_name=$(grep "^clientName" "$SETTINGS_FILE" | cut -d'=' -f2 | xargs)
+            echo "  Client Name: $client_name"
+        fi
+        echo "----------------------------------------"
+        echo
+
+        echo "What would you like to do?"
+        echo "  1. Use existing configuration (skip setup, just start services)"
+        echo "  2. Reconfigure (generate new settings, backup old one)"
+        echo
+
+        read -p "Select option (1 or 2): " CONFIG_CHOICE
+
+        if [ "$CONFIG_CHOICE" = "1" ]; then
+            USE_EXISTING_CONFIG=true
+            load_existing_config
+            echo_info "Using existing configuration. Skipping setup steps..."
+            return
+        elif [ "$CONFIG_CHOICE" = "2" ]; then
+            USE_EXISTING_CONFIG=false
+            echo_info "Will generate new configuration after prompting for values..."
+            return
+        else
+            echo_error "Invalid selection. Please run the script again and select 1 or 2"
+            exit 1
+        fi
+    else
+        echo_info "No existing configuration found. Will generate new settings_local.conf"
+        USE_EXISTING_CONFIG=false
+    fi
 }
 
 process_ngrok_url() {
@@ -269,11 +364,6 @@ prompt_for_inputs() {
     fi
 }
 
-backup_settings() {
-    echo_info "Creating backup of settings.conf..."
-    cp "$SETTINGS_FILE" "$BACKUP_FILE"
-    echo_info "Backup created at: $BACKUP_FILE"
-}
 
 portable_sed_inplace() {
     local pattern="$1"
@@ -288,11 +378,26 @@ portable_sed_inplace() {
     fi
 }
 
+generate_settings_from_template() {
+    echo_info "Generating settings.conf from template..."
+
+    local temp_file="${SETTINGS_FILE}.tmp"
+    cp "$SETTINGS_TEMPLATE" "$temp_file"
+
+    # Remove all commented lines and empty lines, creating a clean base
+    sed -i.bak '/^#/d; /^$/d' "$temp_file"
+    rm -f "${temp_file}.bak"
+}
+
 update_settings() {
     echo_info "Updating settings.conf..."
 
     local temp_file="${SETTINGS_FILE}.tmp"
-    cp "$SETTINGS_FILE" "$temp_file"
+
+    if [ ! -f "$temp_file" ]; then
+        # Generate from template if not already done
+        generate_settings_from_template
+    fi
 
     # Configure listen_mode
     if grep -q "^listen_mode" "$temp_file"; then
@@ -592,8 +697,6 @@ show_completion_message() {
         echo "  - ngrok: Stop the ngrok process in its terminal (Ctrl+C)"
     fi
     echo
-    echo "Settings backup: $BACKUP_FILE"
-    echo
 
     if [ "$LISTEN_MODE" = "listen_only" ]; then
         echo_info "Your Teranode is running in listen-only mode!"
@@ -614,9 +717,17 @@ main() {
     echo
 
     check_prerequisites
-    prompt_for_inputs
-    backup_settings
-    update_settings
+    check_existing_config
+
+    # Only run configuration steps if not using existing config
+    if [ "$USE_EXISTING_CONFIG" = false ]; then
+        prompt_for_inputs
+        generate_settings_from_template
+        update_settings
+    else
+        echo_info "Using existing configuration, proceeding to start services..."
+    fi
+
     start_docker_compose
     start_ngrok
     set_fsm_state_running
