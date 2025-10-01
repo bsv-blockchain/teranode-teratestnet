@@ -380,6 +380,14 @@ portable_sed_inplace() {
     fi
 }
 
+escape_sed_replacement() {
+    # Escape special characters for sed replacement string
+    # & is special in sed replacement (references the match)
+    # \ is the escape character itself
+    # / is the delimiter we're using
+    printf '%s' "$1" | sed -e 's/[&/\]/\\&/g'
+}
+
 generate_settings_from_template() {
     echo_info "Generating settings_local.conf from template..."
 
@@ -392,9 +400,17 @@ generate_settings_from_template() {
 update_settings() {
     echo_info "Updating settings_local.conf..."
 
+    # Escape all user-provided values for sed
+    local esc_listen_mode=$(escape_sed_replacement "$LISTEN_MODE")
+    local esc_ngrok_url=$(escape_sed_replacement "$NGROK_URL")
+    local esc_rpc_user=$(escape_sed_replacement "$RPC_USER")
+    local esc_rpc_pass=$(escape_sed_replacement "$RPC_PASS")
+    local esc_miner_tag=$(escape_sed_replacement "$MINER_TAG")
+    local esc_client_name=$(escape_sed_replacement "$CLIENT_NAME")
+
     # Configure listen_mode
     if grep -q "^listen_mode" "$SETTINGS_FILE"; then
-        portable_sed_inplace "s|^listen_mode.*|listen_mode.docker.m = ${LISTEN_MODE}|" "$SETTINGS_FILE"
+        portable_sed_inplace "s|^listen_mode.*|listen_mode.docker.m = ${esc_listen_mode}|" "$SETTINGS_FILE"
         echo_info "Updated listen_mode to: ${LISTEN_MODE}"
     else
         echo "listen_mode.docker.m = ${LISTEN_MODE}" >> "$SETTINGS_FILE"
@@ -404,7 +420,7 @@ update_settings() {
     # Only update asset_httpPublicAddress for full mode
     if [ "$LISTEN_MODE" = "full" ]; then
         if grep -q "^asset_httpPublicAddress" "$SETTINGS_FILE"; then
-            portable_sed_inplace "s|^asset_httpPublicAddress.*|asset_httpPublicAddress.docker.m = ${NGROK_URL}/api/v1|" "$SETTINGS_FILE"
+            portable_sed_inplace "s|^asset_httpPublicAddress.*|asset_httpPublicAddress.docker.m = ${esc_ngrok_url}/api/v1|" "$SETTINGS_FILE"
             echo_info "Updated asset_httpPublicAddress"
         else
             echo "asset_httpPublicAddress.docker.m = ${NGROK_URL}/api/v1" >> "$SETTINGS_FILE"
@@ -415,7 +431,7 @@ update_settings() {
     # Only update RPC credentials if they were provided
     if [ -n "$RPC_USER" ]; then
         if grep -q "^rpc_user" "$SETTINGS_FILE"; then
-            portable_sed_inplace "s|^rpc_user.*|rpc_user.docker.m = ${RPC_USER}|" "$SETTINGS_FILE"
+            portable_sed_inplace "s|^rpc_user.*|rpc_user.docker.m = ${esc_rpc_user}|" "$SETTINGS_FILE"
             echo_info "Updated rpc_user"
         else
             echo "rpc_user.docker.m = ${RPC_USER}" >> "$SETTINGS_FILE"
@@ -423,7 +439,7 @@ update_settings() {
         fi
 
         if grep -q "^rpc_pass" "$SETTINGS_FILE"; then
-            portable_sed_inplace "s|^rpc_pass.*|rpc_pass.docker.m = ${RPC_PASS}|" "$SETTINGS_FILE"
+            portable_sed_inplace "s|^rpc_pass.*|rpc_pass.docker.m = ${esc_rpc_pass}|" "$SETTINGS_FILE"
             echo_info "Updated rpc_pass"
         else
             echo "rpc_pass.docker.m = ${RPC_PASS}" >> "$SETTINGS_FILE"
@@ -435,7 +451,7 @@ update_settings() {
 
     if [ -n "$MINER_TAG" ]; then
         if grep -q "^coinbase_arbitrary_text" "$SETTINGS_FILE"; then
-            portable_sed_inplace "s|^coinbase_arbitrary_text.*|coinbase_arbitrary_text.docker.m = ${MINER_TAG}|" "$SETTINGS_FILE"
+            portable_sed_inplace "s|^coinbase_arbitrary_text.*|coinbase_arbitrary_text.docker.m = ${esc_miner_tag}|" "$SETTINGS_FILE"
             echo_info "Updated coinbase_arbitrary_text (Miner Tag)"
         else
             echo "coinbase_arbitrary_text.docker.m = ${MINER_TAG}" >> "$SETTINGS_FILE"
@@ -445,7 +461,7 @@ update_settings() {
 
     if [ -n "$CLIENT_NAME" ]; then
         if grep -q "^clientName" "$SETTINGS_FILE"; then
-            portable_sed_inplace "s|^clientName.*|clientName.docker.m = ${CLIENT_NAME}|" "$SETTINGS_FILE"
+            portable_sed_inplace "s|^clientName.*|clientName.docker.m = ${esc_client_name}|" "$SETTINGS_FILE"
             echo_info "Updated clientName"
         else
             echo "clientName.docker.m = ${CLIENT_NAME}" >> "$SETTINGS_FILE"
