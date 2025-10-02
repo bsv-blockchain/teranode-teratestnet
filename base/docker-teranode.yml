@@ -34,7 +34,7 @@ services:
     entrypoint: [ "/app/entrypoint.sh" ]
     command: [ "-asset=1" ]
     ports:
-      - "127.0.0.1:8090:8090" # expose the blockchain viewer to localhost
+      - "${HOST_IP:-127.0.0.1}:8090:8090" # expose the blockchain viewer to the IP specified by HOST_IP (default: localhost).
     depends_on:
       blockchain:
         condition: service_healthy
@@ -148,7 +148,7 @@ services:
     entrypoint: [ "/app/entrypoint.sh" ]
     command: [ "-p2p=1" ]
     ports:
-      - "127.0.0.1:9905:9905" # P2P port - either TCP to it or remove 127.0.0.1: to make it available on all interfaces
+      - "${HOST_IP:-127.0.0.1}:9905:9905" # P2P port - set HOST_IP=0.0.0.0 in .env to make it available on all interfaces
     depends_on:
       blockchain:
         condition: service_healthy
