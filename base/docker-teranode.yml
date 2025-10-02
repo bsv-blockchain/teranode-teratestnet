@@ -34,7 +34,7 @@ services:
     entrypoint: [ "/app/entrypoint.sh" ]
     command: [ "-asset=1" ]
     ports:
-      - "${HOST_IP:-127.0.0.1}:8090:8090" # expose the blockchain viewer to localhost.
+      - "${HOST_IP:-127.0.0.1}:8090:8090" # expose the blockchain viewer to the IP specified by HOST_IP (default: localhost).
       blockchain:
         condition: service_healthy
     healthcheck:
