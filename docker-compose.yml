@@ -2,7 +2,8 @@ x-teranode-settings:
   &teranode-settings
   environment:
     network: "teratestnet"
-    p2p_bootstrapAddresses: "/dns4/teranode-bootstrap-stage.bsvb.tech/tcp/9901/p2p/12D3KooWJ6kQHAR65xkA34NABsNVAJyVxPWh8JUSo1vtZsTyw4GD"
+    p2p_bootstrapAddresses: ""
+    p2p_dht_use_private: "false"
     # logLevel: "DEBUG"
     # enable this when using your laptop or a server without a public ip
     # someOtherSetting: "value"
