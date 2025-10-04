@@ -2,11 +2,8 @@ x-teranode-settings:
   &teranode-settings
   environment:
     network: "teratestnet"
-    p2p_bootstrapAddresses: ""
-    p2p_dht_use_private: "false"
+    minminingtxfee: "0"
     # logLevel: "DEBUG"
-    # enable this when using your laptop or a server without a public ip
-    # someOtherSetting: "value"
 
 networks:
   teranode-network:
