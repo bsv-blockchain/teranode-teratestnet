@@ -4,8 +4,6 @@ x-teranode-settings:
     network: "teratestnet"
     minminingtxfee: "0"
     # logLevel: "DEBUG"
-    # enable this when using your laptop or a server without a public ip
-    # someOtherSetting: "value"
 
 networks:
   teranode-network:
