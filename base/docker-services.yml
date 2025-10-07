@@ -181,7 +181,7 @@ services:
     networks:
       - teranode-network
     ports:
-      - "127.0.0.1:8000:8000"
+      - "${HOST_IP:-127.0.0.1}:8000:8000"
     depends_on:
       - asset
     volumes:

@@ -70,6 +70,12 @@ services:
       service: peer
     <<: *teranode-settings
 
+  propagation:
+    extends:
+      file: ./base/docker-teranode.yml
+      service: propagation
+    <<: *teranode-settings
+
   # uses lots of disk space
   #  blockpersister:
   #    extends:
@@ -135,7 +141,7 @@ services:
         echo 'Starting CPU miner...';
         echo 'Mining address: '$$MINING_ADDRESS;
         echo 'Miner Tag: '$$MINING_SIG;
-        exec ./minerd --url=http://rpc:9292 --userpass=$$RPC_USER:$$RPC_PASS --coinbase-addr=$$MINING_ADDRESS --coinbase-sig=\"$$MINING_SIG\" --threads=2;
+        exec ./minerd --algo=sha256d --always-gmc --url=http://rpc:9292 --userpass=$$RPC_USER:$$RPC_PASS --coinbase-addr=$$MINING_ADDRESS --coinbase-sig=\"$$MINING_SIG\" --threads=2 --retries=1 --retry-pause=5;
       else
         echo 'Mining disabled or not configured. Container will exit.';
         exit 0;
