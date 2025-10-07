@@ -1,6 +1,6 @@
 x-teranode-base:
   &teranode-base
-  image: ghcr.io/bsv-blockchain/teranode:v0.11.3
+  image: ghcr.io/bsv-blockchain/teranode:v0.11.4
   networks:
     - teranode-network
   volumes:
@@ -127,6 +127,9 @@ services:
     container_name: propagation
     entrypoint: [ "/app/entrypoint.sh" ]
     command: [ "-propagation=1" ]
+    ports:
+      - "${HOST_IP:-127.0.0.1}:8833:8833" # HTTP Propagation port - set HOST_IP=0.0.0.0 in .env to make it available on all interfaces
+      - "127.0.0.1:8084:8084" # GRPC Propagation port, used for tx blasting, do not expose to all interfaces
     depends_on:
       blockchain:
         condition: service_healthy
