@@ -20,7 +20,7 @@ usage() {
 
 start_cpuminer() {
     echo "Starting cpuminer service..."
-    docker run --network=host --replace --name cpuminer -d ghcr.io/bitcoin-sv/cpuminer:latest --algo=sha256d --debug --always-gmc --retries=2 --url=http://0.0.0.0:9292 --userpass=bitcoin:bitcoin --coinbase-addr=mftwFnpdujtDXRwFUzaviLhFbVYg5Hs9Ag --threads=2 --coinbase-sig="/Teranode-Dylan/"
+    docker run --network=host --replace --name cpuminer -d ghcr.io/bitcoin-sv/cpuminer:latest --algo=sha256d --debug --always-gmc --retries=2 --url=http://0.0.0.0:9292 --userpass=bitcoin:bitcoin --coinbase-addr=mftwFnpdujtDXRwFUzaviLhFbVYg5Hs9Ag --threads=4 --coinbase-sig="/Rearden-Steel/"
 }
 
 start_coinbase() {
@@ -40,7 +40,7 @@ start_ngrok() {
 
 start_aerospike() {
     echo "Starting aerospike service..."
-    docker run --replace -d -v /mnt/nvme/aerospike/data:/opt/aerospike/data:Z -v /opt/aerospike/etc:/opt/aerospike/etc/:Z --name aerospike -p 3000-3002:3000-3002 container.aerospike.com/aerospike/aerospike-server --config-file /opt/aerospike/etc/aerospike.conf
+    docker run --replace -d -v /mnt/aerospike/data:/opt/aerospike/data:Z -v /opt/aerospike/etc:/opt/aerospike/etc/:Z --name aerospike -p 3000-3002:3000-3002 container.aerospike.com/aerospike/aerospike-server --config-file /opt/aerospike/etc/aerospike.conf
 }
 
 start_redpanda() {
