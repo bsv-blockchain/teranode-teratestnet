@@ -331,6 +331,23 @@ prompt_for_inputs() {
     fi
 
     echo
+    echo_info "Update Monitoring Configuration"
+    echo_info "Automatically check for new Teranode versions and get notified when updates are available"
+    echo
+    read -p "Would you like to enable automatic update monitoring? (y/n): " ENABLE_UPDATE_MONITOR
+
+    UPDATE_MONITOR_ENABLED="false"
+    if [[ "$ENABLE_UPDATE_MONITOR" =~ ^[Yy]$ ]]; then
+        UPDATE_MONITOR_ENABLED="true"
+        echo_info "Update monitoring will be enabled"
+        echo_info "The system will check for updates every hour and notify you of new versions"
+        echo_info "You can manage the monitor with: scripts/update-monitor.sh {start|stop|status|logs}"
+    else
+        echo_info "Update monitoring disabled"
+        echo_info "You can still check for updates manually with: scripts/check-updates.sh"
+    fi
+
+    echo
     echo_info "Configuration summary:"
     echo "  - Mode: $([ "$LISTEN_MODE" = "listen_only" ] && echo "Listen-only" || echo "Full")"
     if [ "$LISTEN_MODE" = "full" ]; then
@@ -356,6 +373,11 @@ prompt_for_inputs() {
     fi
     if [ -n "$CLIENT_NAME" ]; then
         echo "  - Client Name: $CLIENT_NAME"
+    fi
+    if [ "$UPDATE_MONITOR_ENABLED" = "true" ]; then
+        echo "  - Update Monitoring: Enabled (hourly checks)"
+    else
+        echo "  - Update Monitoring: Disabled"
     fi
     echo
 
@@ -626,6 +648,22 @@ set_fsm_state_running() {
     fi
 }
 
+start_update_monitor() {
+    if [ "$UPDATE_MONITOR_ENABLED" = "true" ]; then
+        echo_info "Starting update monitor..."
+
+        # Start the update monitor in background
+        if "$SCRIPT_DIR/scripts/update-monitor.sh" start; then
+            echo_info "Update monitor started successfully"
+            echo_info "Monitor will check for updates every hour"
+            echo_info "Manage with: scripts/update-monitor.sh {start|stop|status|logs}"
+        else
+            echo_warning "Failed to start update monitor"
+            echo_warning "You can start it manually with: scripts/update-monitor.sh start"
+        fi
+    fi
+}
+
 show_completion_message() {
     echo
     echo_info "========================================="
@@ -694,6 +732,20 @@ show_completion_message() {
     fi
     echo
 
+    if [ "$UPDATE_MONITOR_ENABLED" = "true" ]; then
+        echo "Update Monitoring:"
+        echo "  - Status: ENABLED (checking every hour)"
+        echo "  - Check for updates manually: scripts/check-updates.sh"
+        echo "  - Monitor management: scripts/update-monitor.sh {start|stop|status|logs}"
+        echo "  - View logs: scripts/update-monitor.sh logs"
+    else
+        echo "Update Monitoring:"
+        echo "  - Status: DISABLED"
+        echo "  - Check for updates manually: scripts/check-updates.sh"
+        echo "  - Enable monitoring: scripts/update-monitor.sh start"
+    fi
+    echo
+
     echo_info "To monitor important logs, run:"
     echo "  docker compose logs -f -n 100 blockchain blockvalidation blockassembly subtreevalidation"
     echo
@@ -733,11 +785,14 @@ main() {
         update_settings
     else
         echo_info "Using existing configuration, proceeding to start services..."
+        # Set default values for variables not prompted when using existing config
+        UPDATE_MONITOR_ENABLED="false"
     fi
 
     start_docker_compose
     start_ngrok
     set_fsm_state_running
+    start_update_monitor
     show_completion_message
 }
 
