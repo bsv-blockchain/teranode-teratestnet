@@ -711,6 +711,16 @@ show_completion_message() {
     else
         echo_info "Your Teranode is now ready to process transactions!"
     fi
+
+    echo
+    echo_info "========================================="
+    echo_info "Join the Community!"
+    echo_info "========================================="
+    echo
+    echo_info "Connect with other Teratestnet users and get support:"
+    echo_info "🔗 Telegram: https://t.me/+FIcJEMznX0xiMzlk"
+    echo
+    echo_info "Share your experience, ask questions, and stay updated with the latest developments!"
 }
 
 main() {
