@@ -94,10 +94,10 @@ services:
       file: ./base/docker-services.yml
       service: kafka-shared
 
-#  kafka-console-shared:
-#    extends:
-#      file: ./base/docker-services.yml
-#      service: kafka-console-shared
+  kafka-console-shared:
+    extends:
+      file: ./base/docker-services.yml
+      service: kafka-console-shared
 
   aerospike:
     extends:

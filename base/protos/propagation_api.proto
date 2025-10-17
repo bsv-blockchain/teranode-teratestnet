@@ -1,0 +1,94 @@
+syntax = "proto3";
+
+
+// Package propagation_api provides gRPC services for Bitcoin SV transaction propagation.
+// It handles individual and batch transaction processing, health checks, and debugging
+// capabilities for the BSV network.
+option go_package = "./;propagation_api";
+
+package propagation_api;
+
+import "google/protobuf/timestamp.proto";
+import "error.proto";
+
+// PropagationAPI provides services for processing and propagating Bitcoin SV transactions
+// across the network. It supports various transaction processing methods including
+// individual, batch, and streaming operations.
+service PropagationAPI {
+  // HealthGRPC checks the health status of the propagation service and its dependencies.
+  // Returns a HealthResponse containing the service status and details.
+  rpc HealthGRPC (EmptyMessage) returns (HealthResponse) {}
+
+  // ProcessTransaction processes a single BSV transaction.
+  // The transaction must be provided in raw byte format and must be extended.
+  // Coinbase transactions are not allowed.
+  rpc ProcessTransaction (ProcessTransactionRequest) returns (EmptyMessage) {}
+
+  // ProcessTransactionBatch processes multiple transactions in a single request.
+  // This is more efficient than processing transactions individually when dealing
+  // with large numbers of transactions.
+  rpc ProcessTransactionBatch (ProcessTransactionBatchRequest) returns (ProcessTransactionBatchResponse) {}
+}
+
+// EmptyMessage represents an empty request or response.
+// Used when no additional data needs to be transmitted.
+// swagger:model EmptyMessage
+message EmptyMessage {}
+
+
+// HealthResponse provides information about the service's health status.
+// swagger:model HealthResponse
+message HealthResponse {
+  // ok indicates whether the service is healthy
+  bool ok = 1;
+  // details provides additional information about the health status
+  string details = 2;
+  // timestamp indicates when the health check was performed
+  google.protobuf.Timestamp timestamp = 3;
+}
+
+
+// GetRequest represents a request to retrieve a transaction by its ID.
+// swagger:model GetRequest
+message GetRequest {
+  // txid is the transaction ID in bytes
+  bytes txid = 1;
+}
+
+
+// GetResponse contains the retrieved transaction data.
+// swagger:model GetResponse
+message GetResponse {
+  // tx contains the raw transaction bytes
+  bytes tx = 1;
+}
+
+// ProcessTransactionRequest represents a request to process a single transaction.
+// swagger:model ProcessTransactionRequest
+message ProcessTransactionRequest {
+  // tx contains the raw transaction bytes to process
+  bytes tx = 1;
+}
+
+message BatchTransactionItem {
+  // tx contains the raw transaction bytes to process
+  bytes tx = 1;
+  // trace_context contains the serialized OpenTelemetry trace context as key-value pairs
+  // This allows proper span propagation for each transaction in the batch
+  map<string, string> trace_context = 2;
+}
+
+// ProcessTransactionBatchRequest represents a request to process multiple transactions.
+// swagger:model ProcessTransactionRequest
+message ProcessTransactionBatchRequest {
+  // tx contains an array of raw transaction bytes to process
+  repeated BatchTransactionItem items = 1;
+}
+
+// ProcessTransactionBatchResponse contains the results of batch transaction processing.
+// swagger:model ProcessTransactionBatchResponse
+message ProcessTransactionBatchResponse {
+  // error contains error messages for each transaction in the batch
+  // empty string indicates success for that transaction
+  repeated errors.TError errors = 1;
+}

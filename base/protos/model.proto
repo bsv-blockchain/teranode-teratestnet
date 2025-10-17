@@ -1,0 +1,102 @@
+syntax = "proto3";
+
+option go_package = "github.com/bsv-blockchain/teranode/model";
+
+import "google/protobuf/timestamp.proto";
+
+package model;
+
+// swagger:model MiningCandidate
+message MiningCandidate {
+  bytes id = 1;
+  bytes previous_hash = 2;
+  uint64 coinbase_value = 3;
+  uint32 version = 4;
+  bytes nBits = 5;
+  uint32 time = 6;
+  uint32 height = 7;
+  repeated bytes merkle_proof = 8;
+  uint32 subtreeCount = 9;
+  uint32 num_txs = 10;
+  uint64 size_without_coinbase = 11;
+  repeated bytes subtree_hashes = 12;
+}
+
+// swagger:model MiningSolution
+message MiningSolution {
+  bytes id = 1;
+  bytes coinbase= 2;
+  optional uint32 time = 3;
+  uint32 nonce = 4;
+  optional uint32 version = 5;
+  bytes blockHash = 6;
+}
+
+// swagger:enum NotificationType
+enum NotificationType {
+  PING = 0;
+  Subtree = 1;
+  Block = 2;
+  NotUsed = 3; // Deprecated, was previously used for MiningOn
+  FSMState = 4;
+  BlockSubtreesSet = 5;
+  PeerFailure = 6;  // Peer failed to provide data (catchup, subtree, block, etc)
+}
+
+// swagger:model NotificationMetadata
+message NotificationMetadata {
+  //define a map of string to string
+  map<string, string> metadata = 1;
+}
+
+// swagger:model BlockInfo
+message BlockInfo {
+  google.protobuf.Timestamp seen_at = 1;
+  uint32 height = 2;
+  bool orphaned = 3;
+  bytes block_header = 4;
+  string miner = 5;
+  uint64 coinbase_value = 6;
+  uint64 transaction_count = 7;
+  uint64 size = 8;
+}
+
+// swagger:model SuitableBlock
+message SuitableBlock {
+  bytes hash = 1;
+  uint32 height = 2;
+  bytes nBits = 3;
+  uint32 time = 4;
+  bytes chain_work = 5;
+}
+
+// swagger:model BlockStats
+message BlockStats {
+  uint64 block_count = 1;
+  uint64 tx_count = 2;
+  uint64 max_height = 3;
+  double avg_block_size = 4;
+  double avg_tx_count_per_block = 5;
+  uint32 first_block_time = 6;
+  uint32 last_block_time = 7;
+  bytes chain_work = 8;
+}
+
+// swagger:model DataPoint
+message DataPoint {
+  uint32 timestamp = 1;
+  uint64 tx_count = 2;
+}
+
+// swagger:model BlockDataPoints
+message BlockDataPoints {
+  repeated DataPoint data_points = 1;
+}
+
+// swagger:model ChainTip
+message ChainTip {
+  uint32 height = 1;      // Height of the chain tip
+  string hash = 2;        // Block hash of the tip
+  uint32 branchlen = 3;    // 0 for main chain, length of branch for forks
+  string status = 4;      // "active" for main chain, or "valid-fork", "valid-headers", "headers-only", "invalid"
+}
