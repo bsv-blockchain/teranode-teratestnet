@@ -18,9 +18,8 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
-  "id": 1,
+  "id": 25,
   "links": [],
-  "liveNow": false,
   "panels": [
     {
       "datasource": {
@@ -33,11 +32,13 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "TPS",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -46,6 +47,7 @@
               "tooltip": false,
               "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 1,
             "pointSize": 5,
@@ -69,8 +71,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -100,10 +101,12 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         }
       },
+      "pluginVersion": "12.0.1",
       "targets": [
         {
           "datasource": {
@@ -111,9 +114,9 @@
             "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "(sum(increase(propagation_transactions_count{instance=~\"$instance\",service=~\"$srvc\",namespace=~\"$namespace\"}[$grouping_interval])) by (service,) >0) / 60",
+          "expr": "(sum(increase(teranode_propagation_transactions_count{instance=~\"$instance\",service=~\"$srvc\",namespace=~\"$namespace\",subsystem=~\"$subsystem\"}[$grouping_interval])) by (container,namespace) >0) / 60",
           "interval": "",
-          "legendFormat": "Propagation - {{service}}",
+          "legendFormat": "Propagation - {{namespace}}",
           "range": true,
           "refId": "A"
         },
@@ -123,9 +126,9 @@
             "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "sum(increase(tx_blaster_processed_transactions{instance=~\"$instance\",service=~\"$srvc\",namespace=~\"$namespace\"}[$grouping_interval])) / 60",
+          "expr": "sum(increase(teranode_tx_blaster_processed_transactions{instance=~\"$instance\",service=~\"$srvc\",namespace=~\"$namespace\",subsystem=~\"$subsystem\"}[$grouping_interval])) by(namespace,) / 60",
           "hide": false,
-          "legendFormat": "Tx Blaster ",
+          "legendFormat": "Tx Blaster - {{ namespace }}",
           "range": true,
           "refId": "C"
         },
@@ -135,9 +138,9 @@
             "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "sum(increase(blockassembly_transactions{instance=~\"$instance\",service=~\"$srvc\",namespace=~\"$namespace\"}[$grouping_interval]))  by (service,) / 60",
+          "expr": "sum(increase(teranode_blockassembly_add_tx_count{instance=~\"$instance\",service=~\"$srvc\",namespace=~\"$namespace\",subsystem=~\"$subsystem\"}[$grouping_interval]))  by (container,namespace) / 60",
           "hide": false,
-          "legendFormat": "Blockassembly - {{service}}",
+          "legendFormat": "Blockassembly - {{namespace}}",
           "range": true,
           "refId": "D"
         }
@@ -156,11 +159,13 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "TPS",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -169,6 +174,7 @@
               "tooltip": false,
               "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 1,
             "pointSize": 5,
@@ -192,8 +198,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -243,10 +248,12 @@
           "sortDesc": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "desc"
         }
       },
+      "pluginVersion": "12.0.1",
       "targets": [
         {
           "datasource": {
@@ -254,7 +261,7 @@
             "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "sum(tx_blaster_workers{service=~\"tx-blaster-service.*\",namespace=~\"$namespace\"})",
+          "expr": "sum(teranode_tx_blaster_workers{service=~\"tx-blaster-service.*\",namespace=~\"$namespace\",subsystem=~\"$subsystem\"})",
           "hide": false,
           "instant": false,
           "legendFormat": "workers",
@@ -267,9 +274,9 @@
             "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "sum(increase(tx_blaster_processed_transactions{service=~\"$srvc\",namespace=~\"$namespace\"}[$grouping_interval])) by (instance,) / 60 > 0",
+          "expr": "sum(increase(teranode_tx_blaster_processed_transactions{service=~\"$srvc\",namespace=~\"$namespace\",subsystem=~\"$subsystem\"}[$grouping_interval])) by (instance,namespace) / 60 > 0",
           "hide": false,
-          "legendFormat": "Valid-{{instance}}",
+          "legendFormat": "Valid-{{instance}}-{{namespace}}",
           "range": true,
           "refId": "B"
         },
@@ -279,9 +286,9 @@
             "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "sum(increase(tx_blaster_invalid_transactions{service=~\"$srvc\",namespace=~\"$namespace\"}[$grouping_interval])) by (instance) / 60 > 0",
+          "expr": "sum(increase(teranode_tx_blaster_invalid_transactions{service=~\"$srvc\",namespace=~\"$namespace\",subsystem=~\"$subsystem\"}[$grouping_interval])) by (instance,namespace) / 60 > 0",
           "hide": false,
-          "legendFormat": "Invalid-{{instance}}",
+          "legendFormat": "Invalid-{{instance}}-{{namespace}}",
           "range": true,
           "refId": "A"
         },
@@ -291,9 +298,9 @@
             "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "sum(increase(tx_blaster_retry_transactions{service=~\"$srvc\",namespace=~\"$namespace\"}[$grouping_interval])) by (instance) / 60 > 0",
+          "expr": "sum(increase(teranode_tx_blaster_retry_transactions{service=~\"$srvc\",namespace=~\"$namespace\",subsystem=~\"$subsystem\"}[$grouping_interval])) by (instance,namespace) / 60 > 0",
           "hide": false,
-          "legendFormat": "Retries-{{instance}}",
+          "legendFormat": "Retries-{{instance}}-{{namespace}}",
           "range": true,
           "refId": "D"
         }
@@ -312,11 +319,13 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "TPS",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -325,6 +334,7 @@
               "tooltip": false,
               "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 1,
             "pointSize": 5,
@@ -348,8 +358,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -381,10 +390,12 @@
           "sortDesc": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "desc"
         }
       },
+      "pluginVersion": "12.0.1",
       "targets": [
         {
           "datasource": {
@@ -392,7 +403,7 @@
             "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "(sum(increase(propagation_transactions_count{instance=~\"$instance\",service=~\"$srvc\",namespace=~\"$namespace\"}[$grouping_interval])) by (instance,) >0) / 60",
+          "expr": "(sum(increase(teranode_propagation_transactions_count{instance=~\"$instance\",service=~\"$srvc\",namespace=~\"$namespace\",subsystem=~\"$subsystem\"}[$grouping_interval])) by (instance,) >0) / 60",
           "hide": false,
           "legendFormat": "{{instance}}",
           "range": true,
@@ -404,7 +415,7 @@
             "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "(sum(increase(propagation_invalid_transactions_count{instance=~\"$instance\",service=~\"$srvc\",namespace=~\"$namespace\"}[$grouping_interval])) by (instance,) >0) / 60",
+          "expr": "(sum(increase(teranode_propagation_invalid_transactions_count{instance=~\"$instance\",service=~\"$srvc\",namespace=~\"$namespace\",subsystem=~\"$subsystem\"}[$grouping_interval])) by (instance,) >0) / 60",
           "hide": false,
           "legendFormat": "Invalid: {{instance}}",
           "range": true,
@@ -425,11 +436,13 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "TPS",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -438,6 +451,7 @@
               "tooltip": false,
               "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 1,
             "pointSize": 5,
@@ -493,10 +507,12 @@
           "sortDesc": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "desc"
         }
       },
+      "pluginVersion": "12.0.1",
       "targets": [
         {
           "datasource": {
@@ -504,9 +520,9 @@
             "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "(sum(increase(propagation_transactions_count{instance=~\"$instance\",service=~\"$srvc\",namespace=~\"$namespace\"}[$grouping_interval])) by (node,) >0) / 60",
+          "expr": "(sum(increase(teranode_propagation_transactions_count{instance=~\"$instance\",service=~\"$srvc\",namespace=~\"$namespace\",subsystem=~\"$subsystem\"}[$grouping_interval])) by (namespace,) >0) / 60",
           "hide": false,
-          "legendFormat": "{{node}}",
+          "legendFormat": "{{namespace}}",
           "range": true,
           "refId": "B"
         }
@@ -525,11 +541,13 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 10,
             "gradientMode": "none",
@@ -538,6 +556,7 @@
               "tooltip": false,
               "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 1,
             "pointSize": 5,
@@ -574,7 +593,6 @@
         "y": 41
       },
       "id": 31,
-      "links": [],
       "options": {
         "legend": {
           "calcs": [
@@ -589,11 +607,12 @@
           "sortDesc": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         }
       },
-      "pluginVersion": "8.0.6",
+      "pluginVersion": "12.0.1",
       "targets": [
         {
           "datasource": {
@@ -606,7 +625,7 @@
           "format": "time_series",
           "interval": "",
           "intervalFactor": 2,
-          "legendFormat": "{{namespace}}: {{service}}",
+          "legendFormat": "{{namespace}}: {{container}}",
           "metric": "go_goroutines",
           "range": true,
           "refId": "A",
@@ -627,11 +646,13 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -640,6 +661,7 @@
               "tooltip": false,
               "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 1,
             "pointSize": 5,
@@ -695,10 +717,12 @@
           "sortDesc": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         }
       },
+      "pluginVersion": "12.0.1",
       "targets": [
         {
           "datasource": {
@@ -706,11 +730,23 @@
             "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "sum(increase(blockassembly_transactions{service=~\"$srvc\",namespace=~\"$namespace\"}[$grouping_interval])) by (service) / 60",
+          "expr": "sum(increase(teranode_blockassembly_add_tx_count{service=~\"$srvc\",namespace=~\"$namespace\",subsystem=~\"$subsystem\"}[$grouping_interval])) by (container,namespace) / 60",
           "hide": false,
-          "legendFormat": "Transactions-{{service}}",
+          "legendFormat": "Transactions-{{container}}-{{namespace}}",
           "range": true,
           "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${prometheus}"
+          },
+          "editorMode": "code",
+          "expr": "sum(teranode_subtreeprocessor_dynamic_subtree_size{service=~\"$srvc\",namespace=~\"$namespace\",subsystem=~\"$subsystem\"}) by (container,namespace)",
+          "hide": false,
+          "legendFormat": "Subtree-Size-{{container}}-{{namespace}}",
+          "range": true,
+          "refId": "A"
         }
       ],
       "title": "Transactions Added by Block Assembly /second",
@@ -727,11 +763,13 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -740,6 +778,7 @@
               "tooltip": false,
               "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "stepBefore",
             "lineWidth": 1,
             "pointSize": 5,
@@ -795,10 +834,12 @@
           "sortDesc": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         }
       },
+      "pluginVersion": "12.0.1",
       "targets": [
         {
           "datasource": {
@@ -806,9 +847,9 @@
             "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "(sum(blockassembly_transactions{instance=~\"$instance\",service=~\"$srvc\",service!~\"tx-blaster.*\",namespace=~\"$namespace\"}) by (service,) >0)",
+          "expr": "(sum(teranode_blockassembly_transactions{instance=~\"$instance\",service=~\"$srvc\",service!~\"tx-blaster.*\",namespace=~\"$namespace\",subsystem=~\"$subsystem\"}) by (container,namespace) >0)",
           "hide": false,
-          "legendFormat": "Transactions",
+          "legendFormat": "Transactions-{{namespace}}",
           "range": true,
           "refId": "B"
         },
@@ -818,9 +859,9 @@
             "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "(sum(blockassembly_queued_transactions{instance=~\"$instance\",service=~\"$srvc\",service!~\"tx-blaster.*\",namespace=~\"$namespace\"}) by (service,) >0)",
+          "expr": "(sum(teranode_blockassembly_queued_transactions{instance=~\"$instance\",service=~\"$srvc\",service!~\"tx-blaster.*\",namespace=~\"$namespace\",subsystem=~\"$subsystem\"}) by (container,namespace) >0)",
           "hide": false,
-          "legendFormat": "Queued",
+          "legendFormat": "Queued-{{namespace}}",
           "range": true,
           "refId": "A"
         },
@@ -830,9 +871,9 @@
             "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "\n(sum(blockassembly_subtrees{instance=~\"$instance\",service=~\"$srvc\",service!~\"tx-blaster.*\",namespace=~\"$namespace\"}) by (service,) >0) / 60",
+          "expr": "\n(sum(teranode_blockassembly_subtrees{instance=~\"$instance\",service=~\"$srvc\",service!~\"tx-blaster.*\",namespace=~\"$namespace\",subsystem=~\"$subsystem\"}) by (container,namespace) >0) / 60",
           "hide": false,
-          "legendFormat": "Subtrees",
+          "legendFormat": "Subtrees-{{namespace}}",
           "range": true,
           "refId": "C"
         }
@@ -851,11 +892,13 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -864,6 +907,7 @@
               "tooltip": false,
               "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 1,
             "pointSize": 5,
@@ -919,10 +963,12 @@
           "sortDesc": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         }
       },
+      "pluginVersion": "12.0.1",
       "targets": [
         {
           "datasource": {
@@ -930,9 +976,9 @@
             "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "sum(increase(validator_validator_send_to_block_assembly_count{service=~\"$srvc\",namespace=~\"$namespace\"}[$grouping_interval])) by (service) / 60 > 0",
+          "expr": "sum(increase(teranode_validator_send_to_block_assembly_count{service=~\"$srvc\",namespace=~\"$namespace\",subsystem=~\"$subsystem\"}[$grouping_interval])) by (container,namespace) / 60 > 0",
           "hide": false,
-          "legendFormat": "Tx Data (block assembly)",
+          "legendFormat": "Tx Data (block assembly)-{{namespace}}",
           "range": true,
           "refId": "B"
         },
@@ -942,9 +988,9 @@
             "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "sum(increase(validator_send_to_blockvalidation_kafka_micros_count{service=~\"$srvc\",namespace=~\"$namespace\"}[$grouping_interval])) by (service) / 60 > 0",
+          "expr": "sum(increase(teranode_validator_send_to_blockvalidation_kafka_count{service=~\"$srvc\",namespace=~\"$namespace\",subsystem=~\"$subsystem\"}[$grouping_interval])) by (container,namespace) / 60 > 0",
           "hide": false,
-          "legendFormat": "Tx Meta (block/subtree validation)",
+          "legendFormat": "Tx Meta (block/subtree validation)-{{namespace}}",
           "range": true,
           "refId": "A"
         }
@@ -963,11 +1009,13 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -976,6 +1024,7 @@
               "tooltip": false,
               "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 1,
             "pointSize": 5,
@@ -1031,10 +1080,12 @@
           "sortDesc": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         }
       },
+      "pluginVersion": "12.0.1",
       "targets": [
         {
           "datasource": {
@@ -1042,9 +1093,9 @@
             "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "sum(increase(subtreevalidation_set_tx_meta_cache_kafka_count{service=~\"$srvc\",namespace=~\"$namespace\"}[$grouping_interval])) by (service,instance) / 60 > 0",
+          "expr": "sum(increase(teranode_subtreevalidation_set_tx_meta_cache_kafka_count{service=~\"$srvc\",namespace=~\"$namespace\",subsystem=~\"$subsystem\"}[$grouping_interval])) by (container,instance) / 60 > 0",
           "hide": false,
-          "legendFormat": "{{service}} - {{instance}}",
+          "legendFormat": "{{container}} - {{instance}}",
           "range": true,
           "refId": "A"
         }
@@ -1063,11 +1114,13 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -1076,6 +1129,7 @@
               "tooltip": false,
               "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "smooth",
             "lineWidth": 1,
             "pointSize": 5,
@@ -1131,10 +1185,12 @@
           "sortDesc": false
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         }
       },
+      "pluginVersion": "12.0.1",
       "targets": [
         {
           "datasource": {
@@ -1142,7 +1198,7 @@
             "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "sum(tx_blaster_workers{namespace=~\"$namespace\"})by (instance,)   >0",
+          "expr": "sum(teranode_tx_blaster_workers{namespace=~\"$namespace\"})by (instance,)   >0",
           "hide": false,
           "legendFormat": "Workers-{{instance}}",
           "range": true,
@@ -1154,7 +1210,7 @@
             "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "sum(tx_blaster_worker_errors{namespace=~\"$namespace\"}) by (instance,)  >0",
+          "expr": "sum(teranode_tx_blaster_worker_errors{namespace=~\"$namespace\"}) by (instance,)  >0",
           "hide": false,
           "legendFormat": "Worker errors - {{instance}}",
           "range": true,
@@ -1175,11 +1231,13 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -1188,6 +1246,7 @@
               "tooltip": false,
               "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "smooth",
             "lineWidth": 1,
             "pointSize": 5,
@@ -1243,10 +1302,12 @@
           "sortDesc": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         }
       },
+      "pluginVersion": "12.0.1",
       "targets": [
         {
           "datasource": {
@@ -1254,9 +1315,9 @@
             "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "sum(blockvalidation_block_found_ch{service!~\"tx-blaster.*\",service=~\"$srvc\",namespace=~\"$namespace\"}) by (service)",
+          "expr": "sum(teranode_blockvalidation_block_found_ch{service!~\"tx-blaster.*\",service=~\"$srvc\",namespace=~\"$namespace\",subsystem=~\"$subsystem\"}) by (container,namespace)",
           "hide": false,
-          "legendFormat": "Blocks queued-{{service}}",
+          "legendFormat": "Blocks queued-{{container}}-{{namespace}}",
           "range": true,
           "refId": "B"
         },
@@ -1266,9 +1327,9 @@
             "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "sum(blockvalidation_catchup_count{service!~\"tx-blaster.*\",service=~\"$srvc\",namespace=~\"$namespace\"}) by (service)",
+          "expr": "sum(teranode_blockvalidation_catchup_count{service!~\"tx-blaster.*\",service=~\"$srvc\",namespace=~\"$namespace\",subsystem=~\"$subsystem\"}) by (container,namespace)",
           "hide": false,
-          "legendFormat": "Blocks catchup-{{service}}",
+          "legendFormat": "Blocks catchup-{{container}}-{{namespace}}",
           "range": true,
           "refId": "A"
         }
@@ -1287,11 +1348,13 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -1300,6 +1363,7 @@
               "tooltip": false,
               "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 1,
             "pointSize": 5,
@@ -1352,10 +1416,12 @@
           "sortDesc": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         }
       },
+      "pluginVersion": "12.0.1",
       "targets": [
         {
           "datasource": {
@@ -1363,9 +1429,9 @@
             "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "sum(increase(subtreevalidation_validate_subtree_count{service!~\"tx-blaster.*\",service=~\"$srvc\",namespace=~\"$namespace\"}[$grouping_interval])) by (service) / 60",
+          "expr": "sum(increase(teranode_subtreevalidation_validate_subtree_count{service!~\"tx-blaster.*\",service=~\"$srvc\",namespace=~\"$namespace\",subsystem=~\"$subsystem\"}[$grouping_interval])) by (container) / 60",
           "hide": false,
-          "legendFormat": "{{service}}",
+          "legendFormat": "{{container}}",
           "range": true,
           "refId": "B"
         }
@@ -1384,11 +1450,13 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -1397,6 +1465,7 @@
               "tooltip": false,
               "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "smooth",
             "lineWidth": 1,
             "pointSize": 5,
@@ -1452,10 +1521,12 @@
           "sortDesc": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         }
       },
+      "pluginVersion": "12.0.1",
       "targets": [
         {
           "datasource": {
@@ -1463,9 +1534,9 @@
             "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "sum(blockvalidation_catchup_ch{service!~\"tx-blaster.*\",service=~\"$srvc\",namespace=~\"$namespace\"}) by (service)",
+          "expr": "sum(teranode_blockvalidation_catchup_ch{service!~\"tx-blaster.*\",service=~\"$srvc\",namespace=~\"$namespace\",subsystem=~\"$subsystem\"}) by (container)",
           "hide": false,
-          "legendFormat": "Blocks catchup-{{service}}",
+          "legendFormat": "Blocks catchup-{{container}}",
           "range": true,
           "refId": "A"
         }
@@ -1484,11 +1555,13 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "Count",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "bars",
             "fillOpacity": 100,
             "gradientMode": "none",
@@ -1497,6 +1570,7 @@
               "tooltip": false,
               "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 1,
             "pointSize": 5,
@@ -1571,10 +1645,12 @@
           "sortDesc": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         }
       },
+      "pluginVersion": "12.0.1",
       "targets": [
         {
           "datasource": {
@@ -1582,10 +1658,10 @@
             "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "sum(subtreevalidation_validate_subtree_count{service=~\"$srvc\",namespace=~\"$namespace\"}) by (service) >0",
+          "expr": "sum(teranode_subtreevalidation_validate_subtree_count{service=~\"$srvc\",namespace=~\"$namespace\",subsystem=~\"$subsystem\"}) by (container) >0",
           "hide": false,
           "interval": "$grouping_interval",
-          "legendFormat": "Count: {{service}}",
+          "legendFormat": "Count: {{container}}",
           "range": true,
           "refId": "A"
         },
@@ -1595,10 +1671,10 @@
             "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "sum(subtreevalidation_validate_subtree_duration_sum{service=~\"$srvc\",namespace=~\"$namespace\"}) by (service) >0",
+          "expr": "sum(teranode_subtreevalidation_validate_subtree_duration_sum{service=~\"$srvc\",namespace=~\"$namespace\",subsystem=~\"$subsystem\"}) by (container) >0",
           "hide": false,
           "interval": "$grouping_interval",
-          "legendFormat": "Duration: {{service}}",
+          "legendFormat": "Duration: {{container}}",
           "range": true,
           "refId": "C"
         }
@@ -1617,11 +1693,13 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "bars",
             "fillOpacity": 100,
             "gradientMode": "none",
@@ -1630,6 +1708,7 @@
               "tooltip": false,
               "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "linear",
             "lineStyle": {
               "fill": "solid"
@@ -1686,10 +1765,12 @@
           "sortDesc": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         }
       },
+      "pluginVersion": "12.0.1",
       "targets": [
         {
           "datasource": {
@@ -1697,10 +1778,10 @@
             "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "sum(increase(blockchain_add_block_count{service=~\"$srvc\",namespace=~\"$namespace\"}[1m])) by (service) >0",
+          "expr": "sum(increase(teranode_blockchain_add_block_count{service=~\"$srvc\",namespace=~\"$namespace\",subsystem=~\"$subsystem\"}[1m])) by (container) >0",
           "hide": false,
           "interval": "$grouping_interval",
-          "legendFormat": "{{service}}",
+          "legendFormat": "{{container}}",
           "range": true,
           "refId": "B"
         }
@@ -1719,11 +1800,13 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "TPS",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -1732,6 +1815,7 @@
               "tooltip": false,
               "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 1,
             "pointSize": 5,
@@ -1786,10 +1870,12 @@
           "sortDesc": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "desc"
         }
       },
+      "pluginVersion": "12.0.1",
       "targets": [
         {
           "datasource": {
@@ -1797,7 +1883,7 @@
             "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "sum(increase(aerospike_utxo_create_batch_count[$grouping_interval])) / 60",
+          "expr": "sum(increase(teranode_aerospike_utxo_create_batch_count[$grouping_interval])) / 60",
           "hide": false,
           "legendFormat": "UTXO: Batch Create",
           "range": true,
@@ -1809,7 +1895,7 @@
             "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "sum(increase(aerospike_utxo_store[$grouping_interval])) / 60",
+          "expr": "sum(increase(teranode_aerospike_utxo_store[$grouping_interval])) / 60",
           "hide": false,
           "legendFormat": "UTXO: Store",
           "range": true,
@@ -1821,7 +1907,7 @@
             "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "sum(increase(aerospike_utxo_spend_batch_count[$grouping_interval])) / 60",
+          "expr": "sum(increase(teranode_aerospike_utxo_spend_batch_count[$grouping_interval])) / 60",
           "hide": false,
           "legendFormat": "UTXO: Spend Batch",
           "range": true,
@@ -1833,7 +1919,7 @@
             "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "sum(increase(aerospike_map_utxo_reset[$grouping_interval])) / 60",
+          "expr": "sum(increase(teranode_aerospike_map_utxo_reset[$grouping_interval])) / 60",
           "hide": false,
           "legendFormat": "Map: Restore",
           "range": true,
@@ -1845,7 +1931,7 @@
             "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "sum(increase(aerospike_map_utxo_spend[$grouping_interval])) / 60",
+          "expr": "sum(increase(teranode_aerospike_map_utxo_spend[$grouping_interval])) / 60",
           "hide": false,
           "legendFormat": "Map: Spend",
           "range": true,
@@ -1858,7 +1944,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(increase(aerospike_map_utxo_respend[$grouping_interval])) / 60",
+          "expr": "sum(increase(teranode_aerospike_map_utxo_respend[$grouping_interval])) / 60",
           "hide": false,
           "instant": false,
           "legendFormat": "Map: Respend",
@@ -1872,7 +1958,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(increase(aerospike_map_utxo_reset[$grouping_interval])) / 60",
+          "expr": "sum(increase(teranode_aerospike_map_utxo_reset[$grouping_interval])) / 60",
           "hide": false,
           "instant": false,
           "legendFormat": "Map: Reset",
@@ -1894,11 +1980,13 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "TPS",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -1907,6 +1995,7 @@
               "tooltip": false,
               "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 1,
             "pointSize": 5,
@@ -1961,10 +2050,12 @@
           "sortDesc": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "desc"
         }
       },
+      "pluginVersion": "12.0.1",
       "targets": [
         {
           "datasource": {
@@ -1973,7 +2064,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(increase(aerospike_map_txmeta_get[$grouping_interval])) / 60",
+          "expr": "sum(increase(teranode_aerospike_map_txmeta_get[$grouping_interval])) / 60",
           "hide": false,
           "instant": false,
           "legendFormat": "Get",
@@ -1987,7 +2078,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(increase(aerospike_map_txmeta_set_mined[$grouping_interval]))/ 60",
+          "expr": "sum(increase(teranode_aerospike_map_txmeta_set_mined[$grouping_interval]))/ 60",
           "hide": false,
           "instant": false,
           "legendFormat": "Set",
@@ -2001,7 +2092,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(increase(aerospike_map_txmeta_delete[$grouping_interval]))/ 60",
+          "expr": "sum(increase(teranode_aerospike_map_txmeta_delete[$grouping_interval]))/ 60",
           "hide": false,
           "instant": false,
           "legendFormat": "Delete",
@@ -2015,7 +2106,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(increase(aerospike_map_txmeta_set_mined[$grouping_interval]))/ 60",
+          "expr": "sum(increase(teranode_aerospike_map_txmeta_set_mined[$grouping_interval]))/ 60",
           "hide": false,
           "instant": false,
           "legendFormat": "Set-Mined",
@@ -2029,7 +2120,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(increase(aerospike_map_txmeta_set_mined_batch[$grouping_interval]))/ 60",
+          "expr": "sum(increase(teranode_aerospike_map_txmeta_set_mined_batch[$grouping_interval]))/ 60",
           "hide": false,
           "instant": false,
           "legendFormat": "Set-Mined-Batch",
@@ -2043,7 +2134,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(increase(aerospike_map_txmeta_set_mined_batch_n[$grouping_interval]))/ 60",
+          "expr": "sum(increase(teranode_aerospike_map_txmeta_set_mined_batch_n[$grouping_interval]))/ 60",
           "hide": false,
           "instant": false,
           "legendFormat": "Set-Mined-BatchN",
@@ -2057,7 +2148,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(increase(aerospike_txmeta_get_multi_n[$grouping_interval]))/ 60",
+          "expr": "sum(increase(teranode_aerospike_txmeta_get_multi_n[$grouping_interval]))/ 60",
           "hide": false,
           "instant": false,
           "legendFormat": "Get-Multi-BatchN",
@@ -2071,7 +2162,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(increase(aerospike_txmeta_set_mined_batch_err_n[$grouping_interval]))/ 60",
+          "expr": "sum(increase(teranode_aerospike_txmeta_set_mined_batch_err_n[$grouping_interval]))/ 60",
           "hide": false,
           "instant": false,
           "legendFormat": "Set-Multi-ErrN",
@@ -2085,7 +2176,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(increase(aerospike_map_txmeta_set_mined_batch[$grouping_interval]))/ 60",
+          "expr": "sum(increase(teranode_aerospike_map_txmeta_set_mined_batch[$grouping_interval]))/ 60",
           "hide": false,
           "instant": false,
           "legendFormat": "Set-Batch",
@@ -2099,7 +2190,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(increase(aerospike_map_txmeta_get_multi[$grouping_interval])) / 60",
+          "expr": "sum(increase(teranode_aerospike_map_txmeta_get_multi[$grouping_interval])) / 60",
           "hide": false,
           "instant": false,
           "legendFormat": "Get-Multi",
@@ -2121,11 +2212,13 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "TPS",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -2134,6 +2227,7 @@
               "tooltip": false,
               "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 1,
             "pointSize": 5,
@@ -2188,10 +2282,12 @@
           "sortDesc": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "desc"
         }
       },
+      "pluginVersion": "12.0.1",
       "targets": [
         {
           "datasource": {
@@ -2199,7 +2295,7 @@
             "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "sum(increase(aerospike_map_utxo_get[$grouping_interval])) / 60",
+          "expr": "sum(increase(teranode_aerospike_utxo_get[$grouping_interval])) / 60",
           "hide": false,
           "legendFormat": "Get",
           "range": true,
@@ -2310,11 +2406,13 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "TPS",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -2323,6 +2421,7 @@
               "tooltip": false,
               "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 1,
             "pointSize": 5,
@@ -2377,10 +2476,12 @@
           "sortDesc": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "desc"
         }
       },
+      "pluginVersion": "12.0.1",
       "targets": [
         {
           "datasource": {
@@ -2389,7 +2490,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(increase(aerospike_map_txmeta_get[$grouping_interval])) / 60",
+          "expr": "sum(increase(teranode_aerospike_txmeta_get[$grouping_interval])) / 60",
           "hide": false,
           "instant": false,
           "legendFormat": "Get",
@@ -2523,11 +2624,13 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "Nr",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -2536,6 +2639,7 @@
               "tooltip": false,
               "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 1,
             "pointSize": 5,
@@ -2590,10 +2694,12 @@
           "sortDesc": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "desc"
         }
       },
+      "pluginVersion": "12.0.1",
       "targets": [
         {
           "datasource": {
@@ -2602,10 +2708,10 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(rate(blockvalidation_tx_meta_cache_insertions{service!~\"tx-blaster.*\",service=~\"$srvc\",namespace=~\"$namespace\"}[$grouping_interval])) by (service,instance) > 0 / 60",
+          "expr": "sum(rate(teranode_tx_meta_cache_insertions{service!~\"tx-blaster.*\",service=~\"$srvc\",namespace=~\"$namespace\",subsystem=~\"$subsystem\"}[$grouping_interval])) by (container,instance) > 0 / 60",
           "hide": false,
           "instant": false,
-          "legendFormat": "Cache insertions - {{service}} - {{instance}}",
+          "legendFormat": "Cache insertions - {{container}} - {{instance}}",
           "range": true,
           "refId": "H"
         },
@@ -2616,10 +2722,10 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(rate(blockvalidation_tx_meta_cache_hits{service!~\"tx-blaster.*\",service=~\"$srvc\",namespace=~\"$namespace\"}[$grouping_interval])) by (service,instance) > 0 / 60",
+          "expr": "sum(rate(teranode_blockvalidation_tx_meta_cache_hits{service!~\"tx-blaster.*\",service=~\"$srvc\",namespace=~\"$namespace\",subsystem=~\"$subsystem\"}[$grouping_interval])) by (container,instance) > 0 / 60",
           "hide": false,
           "instant": false,
-          "legendFormat": "Cache hits - {{service}} - {{instance}}",
+          "legendFormat": "Cache hits - {{container}} - {{instance}}",
           "range": true,
           "refId": "A"
         },
@@ -2630,10 +2736,10 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(rate(blockvalidation_tx_meta_cache_misses{service!~\"tx-blaster.*\",service=~\"$srvc\"}[$grouping_interval])) by (service,instance) > 0 / 60",
+          "expr": "sum(rate(teranode_blockvalidation_tx_meta_cache_misses{service!~\"tx-blaster.*\",service=~\"$srvc\",subsystem=~\"$subsystem\"}[$grouping_interval])) by (container,instance) > 0 / 60",
           "hide": false,
           "instant": false,
-          "legendFormat": "Cache misses - {{service}} - {{instance}}",
+          "legendFormat": "Cache misses - {{container}} - {{instance}}",
           "range": true,
           "refId": "B"
         },
@@ -2644,10 +2750,10 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(rate(blockvalidation_tx_meta_cache_evictions{service!~\"tx-blaster.*\",service=~\"$srvc\"}[$grouping_interval])) by (service,instance) > 0 / 60",
+          "expr": "sum(rate(teranode_blockvalidation_tx_meta_cache_evictions{service!~\"tx-blaster.*\",service=~\"$srvc\",subsystem=~\"$subsystem\"}[$grouping_interval])) by (container,instance) > 0 / 60",
           "hide": false,
           "instant": false,
-          "legendFormat": "Cache evictions - {{service}} - {{instance}}",
+          "legendFormat": "Cache evictions - {{container}} - {{instance}}",
           "range": true,
           "refId": "C"
         },
@@ -2658,10 +2764,10 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(rate(blockvalidation_tx_meta_cache_get_origin{service!~\"tx-blaster.*\",service=~\"$srvc\"}[$grouping_interval])) by (service,instance) > 0 / 60",
+          "expr": "sum(rate(teranode_blockvalidation_tx_meta_cache_get_origin{service!~\"tx-blaster.*\",service=~\"$srvc\",subsystem=~\"$subsystem\"}[$grouping_interval])) by (container,instance) > 0 / 60",
           "hide": false,
           "instant": false,
-          "legendFormat": "Get from Aeropsike - {{service}} - {{instance}}",
+          "legendFormat": "Get from Aeropsike - {{container}} - {{instance}}",
           "range": true,
           "refId": "D"
         }
@@ -2680,11 +2786,13 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "Nr",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -2693,6 +2801,7 @@
               "tooltip": false,
               "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 1,
             "pointSize": 5,
@@ -2747,11 +2856,12 @@
           "sortDesc": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "desc"
         }
       },
-      "pluginVersion": "10.1.1",
+      "pluginVersion": "12.0.1",
       "targets": [
         {
           "datasource": {
@@ -2760,10 +2870,10 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(blockvalidation_tx_meta_cache_size{service!~\"tx-blaster.*\",service=~\"$srvc\",service!~\"tx-blaster.*\",namespace=~\"$namespace\"}) by (service,instance)",
+          "expr": "sum(teranode_tx_meta_cache_size{service!~\"tx-blaster.*\",service=~\"$srvc\",service!~\"tx-blaster.*\",namespace=~\"$namespace\",subsystem=~\"$subsystem\"}) by (container,instance)\n",
           "hide": false,
           "instant": false,
-          "legendFormat": "Cache size - {{service}} - {{instance}}",
+          "legendFormat": "Cache size - {{container}} - {{instance}}",
           "range": true,
           "refId": "A"
         }
@@ -2782,11 +2892,13 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "Nr",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -2795,6 +2907,7 @@
               "tooltip": false,
               "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 1,
             "pointSize": 5,
@@ -2850,11 +2963,12 @@
           "sortDesc": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "desc"
         }
       },
-      "pluginVersion": "10.1.1",
+      "pluginVersion": "12.0.1",
       "targets": [
         {
           "datasource": {
@@ -2863,10 +2977,10 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(blockvalidation_subtree_exists_cache{service!~\"tx-blaster.*\",service=~\"$srvc\",service!~\"tx-blaster.*\",namespace=~\"$namespace\"}) by (service)",
+          "expr": "sum(teranode_blockvalidation_subtree_exists_cache{service!~\"tx-blaster.*\",service=~\"$srvc\",service!~\"tx-blaster.*\",namespace=~\"$namespace\",subsystem=~\"$subsystem\"}) by (container)",
           "hide": false,
           "instant": false,
-          "legendFormat": "Subtrees queued - {{service}}",
+          "legendFormat": "Subtrees queued - {{container}}",
           "range": true,
           "refId": "A"
         }
@@ -2885,11 +2999,13 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "Nr",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -2898,6 +3014,7 @@
               "tooltip": false,
               "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 1,
             "pointSize": 5,
@@ -2952,11 +3069,12 @@
           "sortDesc": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "desc"
         }
       },
-      "pluginVersion": "10.1.1",
+      "pluginVersion": "12.0.1",
       "targets": [
         {
           "datasource": {
@@ -2965,10 +3083,10 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(blockvalidation_tx_meta_cache_cache_total_elements_added{service!~\"tx-blaster.*\",service=~\"$srvc\",service!~\"tx-blaster.*\",namespace=~\"$namespace\"}) by (service,instance)",
+          "expr": "sum(teranode_tx_meta_cache_total_elements_added{service!~\"tx-blaster.*\",service=~\"$srvc\",service!~\"tx-blaster.*\",namespace=~\"$namespace\",subsystem=~\"$subsystem\"})by (container,instance)",
           "hide": false,
           "instant": false,
-          "legendFormat": "Cache size - {{service}} - {{instance}}",
+          "legendFormat": "Cache size - {{container}} - {{instance}}",
           "range": true,
           "refId": "A"
         }
@@ -2987,11 +3105,13 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -3000,6 +3120,7 @@
               "tooltip": false,
               "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 1,
             "pointSize": 5,
@@ -3054,10 +3175,12 @@
           "sortDesc": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "desc"
         }
       },
+      "pluginVersion": "12.0.1",
       "targets": [
         {
           "datasource": {
@@ -3066,7 +3189,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(rate(Asset_http_get_subtree{namespace=~\"$namespace\"}[$grouping_interval])) by (app,)",
+          "expr": "sum(rate(teranode_asset_http_get_subtree{namespace=~\"$namespace\"}[$grouping_interval])) by (app,)",
           "hide": false,
           "instant": false,
           "interval": "$grouping_interval",
@@ -3089,11 +3212,13 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "Nr",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -3102,6 +3227,7 @@
               "tooltip": false,
               "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 1,
             "pointSize": 5,
@@ -3157,11 +3283,12 @@
           "sortDesc": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "desc"
         }
       },
-      "pluginVersion": "10.1.1",
+      "pluginVersion": "12.0.1",
       "targets": [
         {
           "datasource": {
@@ -3170,10 +3297,10 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(blockvalidation_block_found_ch{service!~\"tx-blaster.*\",service=~\"$srvc\",service!~\"tx-blaster.*\",namespace=~\"$namespace\"}) by (service)",
+          "expr": "sum(teranode_blockvalidation_block_found_ch{service!~\"tx-blaster.*\",service=~\"$srvc\",service!~\"tx-blaster.*\",namespace=~\"$namespace\",subsystem=~\"$subsystem\"}) by (container)",
           "hide": false,
           "instant": false,
-          "legendFormat": "Blocks queued - {{service}}",
+          "legendFormat": "Blocks queued - {{container}}",
           "range": true,
           "refId": "A"
         },
@@ -3184,10 +3311,10 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(blockvalidation_last_validated_blocks_cache{service!~\"tx-blaster.*\",service=~\"$srvc\",service!~\"tx-blaster.*\",namespace=~\"$namespace\"}) by (service)",
+          "expr": "sum(teranode_blockvalidation_last_validated_blocks_cache{service!~\"tx-blaster.*\",service=~\"$srvc\",service!~\"tx-blaster.*\",namespace=~\"$namespace\",subsystem=~\"$subsystem\"}) by (container)",
           "hide": false,
           "instant": false,
-          "legendFormat": "Blocks in RAM - {{service}}",
+          "legendFormat": "Blocks in RAM - {{container}}",
           "range": true,
           "refId": "B"
         }
@@ -3206,11 +3333,13 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -3219,6 +3348,7 @@
               "tooltip": false,
               "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 1,
             "pointSize": 5,
@@ -3273,10 +3403,12 @@
           "sortDesc": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "desc"
         }
       },
+      "pluginVersion": "12.0.1",
       "targets": [
         {
           "datasource": {
@@ -3285,7 +3417,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(increase(tx_blaster_errors{service=~\"$service\",namespace=~\"$namespace\"}[$grouping_interval])) /60",
+          "expr": "sum(increase(teranode_tx_blaster_errors{service=~\"$service\",namespace=~\"$namespace\",subsystem=~\"$subsystem\"}[$grouping_interval])) /60",
           "hide": false,
           "instant": false,
           "interval": "$grouping_interval",
@@ -3298,9 +3430,9 @@
       "type": "timeseries"
     }
   ],
+  "preload": false,
   "refresh": "",
-  "schemaVersion": 38,
-  "style": "dark",
+  "schemaVersion": 41,
   "tags": [],
   "templating": {
     "list": [
@@ -3309,11 +3441,9 @@
         "auto_count": 30,
         "auto_min": "10s",
         "current": {
-          "selected": false,
           "text": "1m",
           "value": "1m"
         },
-        "hide": 0,
         "label": "Grouping Interval",
         "name": "grouping_interval",
         "options": [
@@ -3374,28 +3504,20 @@
           }
         ],
         "query": "1m,5m,10m,30m,1h,6h,12h,1d,7d,14d,30d",
-        "queryValue": "",
         "refresh": 2,
-        "skipUrlSync": false,
         "type": "interval"
       },
       {
         "allValue": ".*",
         "current": {
-          "selected": true,
-          "text": [
-            "All"
-          ],
-          "value": [
-            "$__all"
-          ]
+          "text": "All",
+          "value": "$__all"
         },
         "datasource": {
           "type": "prometheus",
           "uid": "${prometheus}"
         },
         "definition": "label_values(propagation_transactions_size_sum,instance)",
-        "hide": 0,
         "includeAll": true,
         "label": "Instance",
         "multi": true,
@@ -3407,17 +3529,11 @@
         },
         "refresh": 2,
         "regex": "",
-        "skipUrlSync": false,
-        "sort": 0,
         "type": "query"
       },
       {
-        "allValue": "",
         "current": {
-          "selected": true,
-          "text": [
-            "All"
-          ],
+          "text": "All",
           "value": [
             "$__all"
           ]
@@ -3427,7 +3543,6 @@
           "uid": "${prometheus}"
         },
         "definition": "label_values(namespace)",
-        "hide": 0,
         "includeAll": true,
         "label": "Namespace",
         "multi": true,
@@ -3439,17 +3554,12 @@
         },
         "refresh": 2,
         "regex": "",
-        "skipUrlSync": false,
-        "sort": 0,
         "type": "query"
       },
       {
         "allValue": ".*",
         "current": {
-          "selected": true,
-          "text": [
-            "All"
-          ],
+          "text": "All",
           "value": [
             "$__all"
           ]
@@ -3459,7 +3569,6 @@
           "uid": "${prometheus}"
         },
         "definition": "label_values(service)",
-        "hide": 0,
         "includeAll": true,
         "label": "Service",
         "multi": true,
@@ -3471,28 +3580,44 @@
         },
         "refresh": 2,
         "regex": ".*service|m1",
-        "skipUrlSync": false,
-        "sort": 0,
         "type": "query"
       },
       {
         "current": {
-          "selected": false,
-          "text": "Prometheus EU",
-          "value": "Prometheus EU"
+          "text": "In Cluster Prometheus",
+          "value": "P3D067ABEF279A52C"
         },
-        "hide": 0,
         "includeAll": false,
         "label": "Prometheus",
-        "multi": false,
         "name": "prometheus",
         "options": [],
         "query": "prometheus",
-        "queryValue": "",
         "refresh": 1,
         "regex": "",
-        "skipUrlSync": false,
         "type": "datasource"
+      },
+      {
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${prometheus}"
+        },
+        "definition": "label_values(subsystem)",
+        "includeAll": true,
+        "label": "Subsystem",
+        "multi": true,
+        "name": "subsystem",
+        "options": [],
+        "query": {
+          "query": "label_values(subsystem)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "type": "query"
       }
     ]
   },
@@ -3502,8 +3627,7 @@
   },
   "timepicker": {},
   "timezone": "utc",
-  "title": "Teranode - Service Overview",
-  "uid": "teranode-overview",
-  "version": 169,
-  "weekStart": ""
+  "title": "Teranode Service Overview",
+  "uid": "cde0cde9-5698-4433-b851-ccae709ee2b2",
+  "version": 1
 }
