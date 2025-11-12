@@ -5,6 +5,7 @@ x-teranode-settings:
     network: "teratestnet"
     minminingtxfee: "0"
     p2p_dht_mode: "client" # switch this to server if you have a public IP and want to host a DHT node
+    # the p2p_relay_peers aren't strictly required, but help with speed up discovering other peers
     p2p_relay_peers: "/dns4/teranode-eks-ttn-us-1-p2p.bsvb.tech/tcp/9905/p2p/12D3KooWFj5nh1m3iAooxnfp5VvDtufYajTpBSopUt7anj4XLqJp|/dns4/teranode-eks-ttn-eu-1-p2p.bsvb.tech/tcp/9905/p2p/12D3KooWDnQoDerA2KC8xD5hDqiSp21zf9zS5ezM32wuXgLUaden"
     # logLevel: "DEBUG"
 
