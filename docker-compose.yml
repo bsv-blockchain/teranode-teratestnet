@@ -157,3 +157,9 @@ services:
     depends_on:
       rpc:
         condition: service_healthy
+
+  seeder:
+    extends:
+      file: ./base/docker-teranode.yml
+      service: seeder
+    <<: *teranode-settings

@@ -180,3 +180,17 @@ services:
       blockchain:
         condition: service_healthy
     restart: on-failure
+
+  seeder:
+    <<: *teranode-base
+    container_name: seeder
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["sleep infinity"]
+    volumes:
+      - ${SEED_DATA_PATH:-./}:/seed:ro
+    depends_on:
+      - aerospike
+      - postgres
+      - kafka-shared
+    profiles:
+      - seeding
