@@ -6,6 +6,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SETTINGS_FILE="${SCRIPT_DIR}/base/settings_local.conf"
 SETTINGS_TEMPLATE="${SCRIPT_DIR}/base/settings_local.conf.template"
 USE_EXISTING_CONFIG=false
+USE_SEEDING=false
+RESET_DATA=false
+SEED_HASH=""
+SEED_DIR="${SCRIPT_DIR}/seed"
 
 GREEN='\033[0;32m'
 RED='\033[0;31m'
@@ -143,9 +147,9 @@ check_existing_config() {
         echo "----------------------------------------"
         echo
 
-        echo "What would you like to do?"
-        echo "  1. Use existing configuration (skip setup, just start services)"
-        echo "  2. Reconfigure (overwrite with new settings)"
+        echo "Configuration options:"
+        echo "  1. Use existing configuration"
+        echo "  2. Reconfigure (create new settings)"
         echo
 
         read -p "Select option (1 or 2): " CONFIG_CHOICE
@@ -153,18 +157,22 @@ check_existing_config() {
         if [ "$CONFIG_CHOICE" = "1" ]; then
             USE_EXISTING_CONFIG=true
             load_existing_config
-            echo_info "Using existing configuration. Skipping setup steps..."
+            echo_info "Using existing configuration"
             return
         elif [ "$CONFIG_CHOICE" = "2" ]; then
             USE_EXISTING_CONFIG=false
-            echo_info "Will generate new configuration after prompting for values..."
+            echo_info "Will create new configuration"
             return
         else
             echo_error "Invalid selection. Please run the script again and select 1 or 2"
             exit 1
         fi
     else
-        echo_info "No existing configuration found. Will generate new settings_local.conf"
+        echo
+        echo_info "========================================="
+        echo_info "Configuration"
+        echo_info "========================================="
+        echo_info "No existing configuration found. Configuration is required."
         USE_EXISTING_CONFIG=false
     fi
 }
@@ -388,6 +396,128 @@ escape_sed_replacement() {
     printf '%s' "$1" | sed -e 's/[&/\]/\\&/g'
 }
 
+download_seed_data() {
+    local seed_url="https://teranode-seed.bsvb.tech/teratestnet/${SEED_HASH}.zip"
+    local zip_file="${SEED_HASH}.zip"
+
+    if [ -d "$SEED_DIR" ]; then
+        echo_info "Seed directory already exists at $SEED_DIR"
+        return 0
+    fi
+
+    echo_info "Downloading seed data from checkpoint..."
+    echo "URL: $seed_url"
+
+    # Download the zip file
+    if ! curl -L -o "$zip_file" "$seed_url"; then
+        echo_error "Failed to download seed file"
+        return 1
+    fi
+
+    # Create seed directory
+    mkdir -p "$SEED_DIR"
+
+    # Unzip the file
+    echo_info "Extracting seed data..."
+    if ! unzip -q "$zip_file" -d "$SEED_DIR"; then
+        echo_error "Failed to unzip seed file"
+        rm -f "$zip_file"
+        return 1
+    fi
+
+    # Clean up zip file
+    rm -f "$zip_file"
+    echo_info "Seed data downloaded and extracted to $SEED_DIR"
+    return 0
+}
+
+run_seeding() {
+    echo
+    echo_info "========================================="
+    echo_info "Starting Blockchain Seeding Process"
+    echo_info "========================================="
+    echo_info "Seed hash: $SEED_HASH"
+    echo
+
+    # Download seed data if needed
+    if ! download_seed_data; then
+        echo_error "Failed to download seed data"
+        return 1
+    fi
+
+    # Start seeder service with dependencies
+    echo_info "Starting seeder service with dependencies (aerospike, postgres, kafka)..."
+    if ! SEED_DATA_PATH="$SEED_DIR" docker compose --profile seeding up -d seeder; then
+        echo_error "Failed to start seeder service"
+        return 1
+    fi
+
+    # Wait for services to settle
+    echo_info "Waiting 5 seconds for services to settle..."
+    sleep 5
+
+    # Run the seeding command
+    echo_info "Running seeder command..."
+    echo "Command: teranode-cli seeder -inputDir /seed -hash $SEED_HASH"
+    if docker exec seeder teranode-cli seeder -inputDir /seed -hash "$SEED_HASH"; then
+        echo_info "SUCCESS: Seeding completed successfully"
+    else
+        echo_error "Seeding failed"
+        docker compose --profile seeding down
+        return 1
+    fi
+
+    # Stop seeder service
+    echo_info "Stopping seeder service..."
+    docker compose --profile seeding down
+
+    echo_info "Seeding process completed successfully!"
+    echo
+    return 0
+}
+
+prompt_for_action() {
+    echo
+    echo_info "========================================="
+    echo_info "Action Selection"
+    echo_info "========================================="
+    echo
+    echo "What would you like to do?"
+    echo "  1. Start services normally"
+    echo "  2. Reset data and start fresh"
+    echo "  3. Seed from checkpoint (resets data automatically)"
+    echo
+
+    read -p "Select action (1-3): " ACTION_CHOICE
+
+    case "$ACTION_CHOICE" in
+        1)
+            echo_info "Will start services normally"
+            USE_SEEDING=false
+            RESET_DATA=false
+            ;;
+        2)
+            echo_info "Will reset data and start fresh"
+            USE_SEEDING=false
+            RESET_DATA=true
+            ;;
+        3)
+            echo_info "Will seed from checkpoint (data will be reset)"
+            USE_SEEDING=true
+            RESET_DATA=true
+            SEED_HASH="0000000000385f94978b6d30f6c570ca37dceec7bc8c5f24c7208376a6c5f72b"
+            echo
+            echo_warning "NOTE: Seed data is pruned - spent UTXOs are not included."
+            echo_warning "For complete transaction history, use option 1 (start normally)."
+            echo_info "Using seed hash: $SEED_HASH"
+            ;;
+        *)
+            echo_error "Invalid selection"
+            exit 1
+            ;;
+    esac
+}
+
 generate_settings_from_template() {
     echo_info "Generating settings_local.conf from template..."
 
@@ -473,9 +603,30 @@ update_settings() {
 }
 
 start_docker_compose() {
-    echo_info "Starting Teratestnet with Docker Compose..."
-
     cd "$SCRIPT_DIR"
+
+    # Reset data if requested
+    if [ "$RESET_DATA" = true ]; then
+        if [ ! -f "./reset-data.sh" ]; then
+            echo_error "reset-data.sh not found in current directory"
+            exit 1
+        fi
+        ./reset-data.sh
+        if [ $? -ne 0 ]; then
+            echo_error "Data reset failed or was cancelled"
+            exit 1
+        fi
+    fi
+
+    # Run seeding process first if requested
+    if [ "$USE_SEEDING" = true ]; then
+        if ! run_seeding; then
+            echo_error "Seeding failed. Please check the errors above and try again."
+            exit 1
+        fi
+    fi
+
+    echo_info "Starting Teratestnet with Docker Compose..."
 
     # Determine compose command
     local compose_cmd=""
@@ -734,17 +885,21 @@ main() {
     echo
 
     check_prerequisites
+
+    # Step 1: Configuration
     check_existing_config
 
-    # Only run configuration steps if not using existing config
+    # Only run configuration prompts if not using existing config
     if [ "$USE_EXISTING_CONFIG" = false ]; then
         prompt_for_inputs
         generate_settings_from_template
         update_settings
-    else
-        echo_info "Using existing configuration, proceeding to start services..."
     fi
 
+    # Step 2: Action selection
+    prompt_for_action
+
+    # Step 3: Execute action
     start_docker_compose
     start_ngrok
     set_fsm_state_running
