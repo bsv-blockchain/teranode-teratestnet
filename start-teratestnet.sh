@@ -397,7 +397,7 @@ escape_sed_replacement() {
 }
 
 download_seed_data() {
-    local seed_url="https://teranode-seed.bsvb.tech/teratestnet/${SEED_HASH}.zip"
+    local seed_url="https://svnode-snapshots.bsvb.tech/teratestnet/${SEED_HASH}.zip"
     local zip_file="${SEED_HASH}.zip"
 
     # Check if seed directory exists and has content
@@ -515,7 +515,7 @@ prompt_for_action() {
             echo_info "Will seed from checkpoint (data will be reset)"
             USE_SEEDING=true
             RESET_DATA=true
-            SEED_HASH="0000000000385f94978b6d30f6c570ca37dceec7bc8c5f24c7208376a6c5f72b"
+            SEED_HASH="000000002ea94a515ad9fd40d710fd249fe8610acef7b74f459446812d565187"
             echo
             echo_warning "NOTE: Seed data is pruned - spent UTXOs are not included."
             echo_warning "For complete transaction history, use option 1 (start normally)."

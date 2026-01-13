@@ -3,6 +3,8 @@ x-teranode-settings:
   environment:
     GOGC: "200" # increase this value to reduce CPU pressure at the cost of increased memory requirements
     network: "teratestnet"
+    # blocks mined limited to 1GB in size, to allow for more participants with smaller hardware on teratestnet
+    blockmaxsize: "1073741824"
     minminingtxfee: "0"
     p2p_dht_mode: "client" # switch this to server if you have a public IP and want to host a DHT node
     # the p2p_relay_peers aren't strictly required, but help with speed up discovering other peers
