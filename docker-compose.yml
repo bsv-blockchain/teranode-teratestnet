@@ -6,9 +6,9 @@ x-teranode-settings:
     # blocks mined limited to 1GB in size, to allow for more participants with smaller hardware on teratestnet
     blockmaxsize: "1073741824"
     minminingtxfee: "0"
-    p2p_dht_mode: "client" # switch this to server if you have a public IP and want to host a DHT node
-    # the p2p_relay_peers aren't strictly required, but help with speed up discovering other peers
-    p2p_relay_peers: "/dns4/teranode-eks-ttn-us-1-p2p.bsvb.tech/tcp/9905/p2p/12D3KooWFj5nh1m3iAooxnfp5VvDtufYajTpBSopUt7anj4XLqJp|/dns4/teranode-eks-ttn-eu-1-p2p.bsvb.tech/tcp/9905/p2p/12D3KooWDnQoDerA2KC8xD5hDqiSp21zf9zS5ezM32wuXgLUaden"
+    # see https://github.com/bsv-blockchain/teranode/blob/1801dca90675824e73f7be64b2810b16b6475ecc/settings.conf#L838-L853
+    # defaults to "off" for safety in shared environments, "client" or "server" is preferred for best p2p connectivity
+    # p2p_dht_mode: "off"
     # logLevel: "DEBUG"
 
 networks:
@@ -74,6 +74,12 @@ services:
     extends:
       file: ./base/docker-teranode.yml
       service: peer
+    <<: *teranode-settings
+
+  pruner:
+    extends:
+      file: ./base/docker-teranode.yml
+      service: pruner
     <<: *teranode-settings
 
   propagation:
