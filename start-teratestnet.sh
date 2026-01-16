@@ -397,12 +397,21 @@ escape_sed_replacement() {
 }
 
 download_seed_data() {
-    local seed_url="https://teranode-seed.bsvb.tech/teratestnet/${SEED_HASH}.zip"
+    local seed_url="https://svnode-snapshots.bsvb.tech/teratestnet/${SEED_HASH}.zip"
     local zip_file="${SEED_HASH}.zip"
 
+    # Check if seed directory exists and has content
     if [ -d "$SEED_DIR" ]; then
-        echo_info "Seed directory already exists at $SEED_DIR"
-        return 0
+        # Check if directory has any files (not just exists)
+        local file_count=$(find "$SEED_DIR" -type f 2>/dev/null | wc -l | tr -d ' ')
+        if [ "$file_count" -gt 0 ]; then
+            echo_info "Seed directory already exists with $file_count files at $SEED_DIR"
+            echo_info "Clearing existing seed data for fresh download..."
+            rm -rf "$SEED_DIR"
+        else
+            echo_info "Seed directory exists but is empty, will download fresh"
+            rm -rf "$SEED_DIR"
+        fi
     fi
 
     echo_info "Downloading seed data from checkpoint..."
@@ -422,6 +431,7 @@ download_seed_data() {
     if ! unzip -q "$zip_file" -d "$SEED_DIR"; then
         echo_error "Failed to unzip seed file"
         rm -f "$zip_file"
+        rm -rf "$SEED_DIR"
         return 1
     fi
 
@@ -505,7 +515,7 @@ prompt_for_action() {
             echo_info "Will seed from checkpoint (data will be reset)"
             USE_SEEDING=true
             RESET_DATA=true
-            SEED_HASH="0000000000385f94978b6d30f6c570ca37dceec7bc8c5f24c7208376a6c5f72b"
+            SEED_HASH="000000002ea94a515ad9fd40d710fd249fe8610acef7b74f459446812d565187"
             echo
             echo_warning "NOTE: Seed data is pruned - spent UTXOs are not included."
             echo_warning "For complete transaction history, use option 1 (start normally)."
