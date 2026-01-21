@@ -17,3 +17,6 @@ Thumbs.db
 # Teranode settings - generated from template
 base/settings_local.conf
 base/settings_local.conf.backup.*
+
+# Seed data - downloaded and unzipped by seed.sh
+seed/
