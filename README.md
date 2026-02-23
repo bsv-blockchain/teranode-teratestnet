@@ -15,7 +15,7 @@ Automated setup for Teranode on the Teratestnet network using Docker Compose.
 ## Prerequisites
 
 - **Docker** and **Docker Compose** installed
-- **Ngrok** (if using default setup) - See [NGROK_PREREQUISITES.md](./NGROK_PREREQUISITES.md)
+- **Ngrok** (if using default setup) - See [SETUP_GUIDE](./docs/SETUP_GUIDE.md#example-1-standard-setup-with-ngrok)
 - 32GB+ RAM, 40GB+ disk space
 - Linux, macOS, or Windows with WSL2
 
@@ -54,7 +54,6 @@ docker compose down -v
 
 For detailed setup instructions, configuration options, troubleshooting, and advanced usage, see:
 - [Complete Setup Guide](./docs/SETUP_GUIDE.md)
-- [Ngrok Prerequisites](./NGROK_PREREQUISITES.md)
 
 ## Service Endpoints
 
