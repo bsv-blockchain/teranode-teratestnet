@@ -7,10 +7,7 @@ x-teranode-settings:
     blockmaxsize: "1073741824"
     excessiveblocksize: "1073741824"
     minminingtxfee: "0"
-    # quick catchup, specific to teratestnet, disable this for other networks
-    blockvalidation_catchup_allow_quick_validation: "true"
-    blockvalidation_catchup_checkpoint_hash: "0000000000c4eaa5d9bc414202eee6ab3e5f7c567fe0cbf0a8ffca6919a702d9"
-    blockvalidation_catchup_checkpoint_height: "5636"
+    p2p_health_check_enabled: "false"
     # see https://github.com/bsv-blockchain/teranode/blob/1801dca90675824e73f7be64b2810b16b6475ecc/settings.conf#L838-L853
     # defaults to "off" for safety in shared environments, "client" or "server" is preferred for best p2p connectivity
     # p2p_dht_mode: "off"
@@ -45,6 +42,12 @@ services:
       file: ./base/docker-teranode.yml
       service: asset
     <<: *teranode-settings
+
+#  legacy:
+#    extends:
+#      file: ./base/docker-teranode.yml
+#      service: legacy
+#    <<: *teranode-settings
 
   asset-cache:
     extends:
