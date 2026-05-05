@@ -9,7 +9,9 @@ USE_EXISTING_CONFIG=false
 USE_SEEDING=false
 RESET_DATA=false
 SEED_HASH=""
-SEED_DIR="${SCRIPT_DIR}/seed"
+SEED_DIR=""
+SEED_BASE="${SCRIPT_DIR}/seed"
+SNAPSHOT_BASE="https://svnode-snapshots.bsvb.tech/teratestnet-teranode/"
 
 GREEN='\033[0;32m'
 RED='\033[0;31m'
@@ -45,6 +47,14 @@ echo_error() {
 
 echo_warning() {
     echo -e "${YELLOW}[WARNING]${NC} $1"
+}
+
+echo_success() {
+    echo -e "${GREEN}[OK]${NC} $1"
+}
+
+echo_yellow() {
+    echo -e "${YELLOW}$1${NC}"
 }
 
 check_prerequisites() {
@@ -396,48 +406,160 @@ escape_sed_replacement() {
     printf '%s' "$1" | sed -e 's/[&/\]/\\&/g'
 }
 
-download_seed_data() {
-    local seed_url="https://svnode-snapshots.bsvb.tech/teratestnet/${SEED_HASH}.zip"
-    local zip_file="${SEED_HASH}.zip"
-
-    # Check if seed directory exists and has content
-    if [ -d "$SEED_DIR" ]; then
-        # Check if directory has any files (not just exists)
-        local file_count=$(find "$SEED_DIR" -type f 2>/dev/null | wc -l | tr -d ' ')
-        if [ "$file_count" -gt 0 ]; then
-            echo_info "Seed directory already exists with $file_count files at $SEED_DIR"
-            echo_info "Clearing existing seed data for fresh download..."
-            rm -rf "$SEED_DIR"
-        else
-            echo_info "Seed directory exists but is empty, will download fresh"
-            rm -rf "$SEED_DIR"
-        fi
+ensure_rclone() {
+    if command -v rclone >/dev/null 2>&1; then
+        return 0
     fi
-
-    echo_info "Downloading seed data from checkpoint..."
-    echo "URL: $seed_url"
-
-    # Download the zip file
-    if ! curl -L -o "$zip_file" "$seed_url"; then
-        echo_error "Failed to download seed file"
+    echo_warning "rclone is required for snapshot fetching."
+    read -p "Install rclone via official installer? [y/N]: " reply
+    reply=${reply:-N}
+    if [[ ! "$reply" =~ ^[Yy]$ ]]; then
+        echo_error "Cannot continue without rclone."
+        echo_info "Install manually: curl https://rclone.org/install.sh | sudo bash"
         return 1
     fi
+    if command -v sudo >/dev/null 2>&1; then
+        curl -s https://rclone.org/install.sh | sudo bash
+    else
+        curl -s https://rclone.org/install.sh | bash
+    fi
+}
 
-    # Create seed directory
+snapshot_complete() {
+    # snapshot_date.txt is written only after the snapshot upload finishes.
+    local url="$1"
+    curl --head --silent --fail "${url}snapshot_date.txt" >/dev/null 2>&1
+}
+
+get_latest_height() {
+    local base_url="$1"
+    local listing
+    if ! listing=$(rclone lsf ":http:" --http-url "${base_url}" 2>/dev/null); then
+        echo_error "Failed to list ${base_url}" >&2
+        return 1
+    fi
+    local heights=()
+    while IFS= read -r line; do
+        [[ "$line" =~ ^([0-9]+)/$ ]] && heights+=("${BASH_REMATCH[1]}")
+    done <<<"$listing"
+    if [ ${#heights[@]} -eq 0 ]; then
+        echo_error "No height directories found at ${base_url}" >&2
+        return 1
+    fi
+    local sorted
+    IFS=$'\n' sorted=($(printf '%s\n' "${heights[@]}" | sort -rn))
+    unset IFS
+    for h in "${sorted[@]}"; do
+        echo_info "Checking height ${h} ..." >&2
+        if snapshot_complete "${base_url}${h}/"; then
+            echo "$h"
+            return 0
+        fi
+        echo_warning "Height ${h} incomplete (no snapshot_date.txt), skipping." >&2
+    done
+    echo_error "No completed snapshots found at ${base_url}" >&2
+    return 1
+}
+
+get_snapshot_hash() {
+    # The utxo-headers filename is <hash>.utxo-headers; that hash is the seed hash.
+    local snap_url="$1"
+    local listing
+    listing=$(rclone lsf ":http:" --http-url "${snap_url}" 2>/dev/null) || return 1
+    while IFS= read -r line; do
+        if [[ "$line" =~ ^([0-9a-fA-F]{64})\.utxo-headers$ ]]; then
+            echo "${BASH_REMATCH[1]}"
+            return 0
+        fi
+    done <<<"$listing"
+    return 1
+}
+
+verify_sha256() {
+    local dir="$1"
+    local sha_tool
+    if command -v sha256sum >/dev/null 2>&1; then
+        sha_tool="sha256sum"
+    elif command -v shasum >/dev/null 2>&1; then
+        sha_tool="shasum -a 256"
+    else
+        echo_error "No sha256 tool (sha256sum or shasum) found — cannot verify snapshot integrity."
+        return 1
+    fi
+    (
+        cd "$dir" || exit 1
+        local found=0
+        for f in *.sha256; do
+            [ -f "$f" ] || continue
+            found=1
+            echo_info "Verifying $(basename "$f" .sha256) ..."
+            if ! $sha_tool -c "$f" >/dev/null; then
+                echo_error "Checksum mismatch for $f"
+                exit 1
+            fi
+        done
+        if [ "$found" -eq 0 ]; then
+            echo_error "No .sha256 files found in $dir — refusing to proceed without verification."
+            exit 1
+        fi
+    )
+}
+
+download_seed_data() {
+    ensure_rclone || return 1
+
+    local height
+    if [ -n "${SEED_HEIGHT:-}" ]; then
+        if ! [[ "$SEED_HEIGHT" =~ ^[0-9]+$ ]]; then
+            echo_error "SEED_HEIGHT must be a numeric block height (got: ${SEED_HEIGHT})."
+            return 1
+        fi
+        height="$SEED_HEIGHT"
+        echo_info "Using SEED_HEIGHT override: $height"
+        if ! snapshot_complete "${SNAPSHOT_BASE}${height}/"; then
+            echo_error "Snapshot at ${SNAPSHOT_BASE}${height}/ is not complete (no snapshot_date.txt)."
+            return 1
+        fi
+    else
+        echo_info "Discovering latest teratestnet snapshot ..."
+        height=$(get_latest_height "$SNAPSHOT_BASE") || return 1
+    fi
+
+    local snap_url="${SNAPSHOT_BASE}${height}/"
+    echo_success "Latest complete snapshot: height ${height}"
+    echo_info "Source: ${snap_url}"
+
+    SEED_HASH=$(get_snapshot_hash "$snap_url") || {
+        echo_error "Could not derive snapshot hash from ${snap_url}"
+        return 1
+    }
+    echo_info "Block hash: ${SEED_HASH}"
+
+    SEED_DIR="${SEED_BASE}/${height}"
     mkdir -p "$SEED_DIR"
 
-    # Unzip the file
-    echo_info "Extracting seed data..."
-    if ! unzip -q "$zip_file" -d "$SEED_DIR"; then
-        echo_error "Failed to unzip seed file"
-        rm -f "$zip_file"
-        rm -rf "$SEED_DIR"
+    echo_info "Downloading to ${SEED_DIR} ..."
+    echo_warning "Snapshots can be large. May take a while."
+
+    if ! rclone copy ":http:" "$SEED_DIR" \
+                    --http-url "$snap_url" \
+                    --progress \
+                    --transfers 4 \
+                    --checkers 8 \
+                    --retries 3 \
+                    --low-level-retries 10 \
+                    --include "*.utxo-headers" \
+                    --include "*.utxo-headers.sha256" \
+                    --include "*.utxo-set" \
+                    --include "*.utxo-set.sha256"; then
+        echo_error "rclone download failed."
         return 1
     fi
 
-    # Clean up zip file
-    rm -f "$zip_file"
-    echo_info "Seed data downloaded and extracted to $SEED_DIR"
+    echo_info "Verifying checksums ..."
+    verify_sha256 "$SEED_DIR" || return 1
+
+    echo_success "Snapshot ready at: ${SEED_DIR}"
     return 0
 }
 
@@ -446,10 +568,9 @@ run_seeding() {
     echo_info "========================================="
     echo_info "Starting Blockchain Seeding Process"
     echo_info "========================================="
-    echo_info "Seed hash: $SEED_HASH"
     echo
 
-    # Download seed data if needed
+    # Download seed data (auto-discovers latest height + block hash).
     if ! download_seed_data; then
         echo_error "Failed to download seed data"
         return 1
@@ -463,23 +584,25 @@ run_seeding() {
     fi
 
     # Wait for services to settle
-    echo_info "Waiting 5 seconds for services to settle..."
-    sleep 5
+    echo_info "Waiting 10 seconds for services to settle..."
+    sleep 10
 
     # Run the seeding command
     echo_info "Running seeder command..."
     echo "Command: teranode-cli seeder -inputDir /seed -hash $SEED_HASH"
     if docker exec seeder teranode-cli seeder -inputDir /seed -hash "$SEED_HASH"; then
-        echo_info "SUCCESS: Seeding completed successfully"
+        echo_success "Seeding completed successfully"
     else
         echo_error "Seeding failed"
-        docker compose --profile seeding down
+        # Only remove the seeder container; keep aerospike/postgres/kafka so
+        # ./start.sh can take over without re-initialising deps.
+        docker compose --profile seeding rm -fsv seeder
         return 1
     fi
 
-    # Stop seeder service
-    echo_info "Stopping seeder service..."
-    docker compose --profile seeding down
+    # Only stop the seeder; populated aerospike/postgres/kafka volumes survive.
+    echo_info "Stopping seeder ..."
+    docker compose --profile seeding rm -fsv seeder
 
     echo_info "Seeding process completed successfully!"
     echo
@@ -512,14 +635,17 @@ prompt_for_action() {
             RESET_DATA=true
             ;;
         3)
-            echo_info "Will seed from checkpoint (data will be reset)"
+            echo_info "Will seed from latest BSVA-hosted snapshot (data will be reset)"
             USE_SEEDING=true
             RESET_DATA=true
-            SEED_HASH="000000002ea94a515ad9fd40d710fd249fe8610acef7b74f459446812d565187"
             echo
             echo_warning "NOTE: Seed data is pruned - spent UTXOs are not included."
             echo_warning "For complete transaction history, use option 1 (start normally)."
-            echo_info "Using seed hash: $SEED_HASH"
+            if [ -n "${SEED_HEIGHT:-}" ]; then
+                echo_info "SEED_HEIGHT override: $SEED_HEIGHT (will pin fetch to this height)"
+            else
+                echo_info "Latest completed snapshot will be auto-discovered."
+            fi
             ;;
         *)
             echo_error "Invalid selection"

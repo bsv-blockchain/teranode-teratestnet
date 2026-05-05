@@ -18,5 +18,5 @@ Thumbs.db
 base/settings_local.conf
 base/settings_local.conf.backup.*
 
-# Seed data - downloaded and unzipped by seed.sh
+# Seed data - downloaded by start-teratestnet.sh (rclone snapshot)
 seed/
