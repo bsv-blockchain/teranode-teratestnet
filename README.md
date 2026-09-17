@@ -1,5 +1,12 @@
 # Teratestnet Docker Helper
 
+> [!IMPORTANT]
+> **This repository is archived. Use [teranode-quickstart](https://github.com/bsv-blockchain/teranode-quickstart) instead.**
+>
+> `teranode-quickstart` replaces this repo and covers all four networks — mainnet, testnet, teratestnet and regtest — from one interactive `setup.sh`. It also ships UTXO snapshot seeding, per-service memory limits scaled to host RAM, Aerospike/Postgres tuning helpers, and a version-pinned `update.sh` that tracks current Teranode releases.
+>
+> This repo is pinned to Teranode v0.15.1 and gets no further updates. Everything below is kept for reference only.
+
 Automated setup for Teranode on the Teratestnet network using Docker Compose.
 
 ## Quick Start
